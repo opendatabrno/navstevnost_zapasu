@@ -1,7 +1,8 @@
 """Odhadne návštěvu a původ fanoušků z exportů Intiq.
 
 Vstup:   data/raw/intiq/*.csv, data/raw/ruian/*.geojson, data/zapasy.csv
-Výstup:  data/processed/zapasy_odhad.csv, data/processed/puvod_<uroven>.csv
+Výstup:  data/processed/zapasy_odhad.csv, puvod_<uroven>.csv, zapasy_okresy.csv,
+         zapasy_vzdalenost.csv, profil_prijezdu.csv
          (negitováno – výsledky nezveřejňovat, dokud není jasná licence)
 Použití: python scripts/zpracuj_intiq.py
 
@@ -26,6 +27,8 @@ OKNO_DNU = 35  # baseline jen ze dnů blízkých zápasu (úroveň dat se v čas
 PRITOMNI = (-180, 285)  # minuty od buly, první a poslední interval
 PRIJEZDY = (-180, 30)
 NAVSTEVNICI = ["RegularVisitors", "IrregularVisitors"]
+HALA = "891e0695123ffff"
+PASMA_KM = [0, 1, 3, 8, 20, 50, 100, 1000]
 REZIDENTI = ["RegularResidents", "IrregularResidents"]
 SVATKY = {
     "2024-01-01", "2024-03-29", "2024-04-01", "2024-09-28", "2024-10-28", "2024-12-24",
@@ -61,6 +64,10 @@ def nacti_prijezdy() -> pd.DataFrame:
     d["rezidenti"] = d[REZIDENTI].sum(axis=1)
     d["celkem"] = d["rezidenti"] + d[NAVSTEVNICI].sum(axis=1)
     return d[["SourceHexagonId", "cas", "rezidenti", "celkem"]].copy()
+
+
+def vzdalenost(hexagon: str) -> float:
+    return h3.great_circle_distance(h3.cell_to_latlng(hexagon), h3.cell_to_latlng(HALA))
 
 
 def volny(den: pd.Timestamp) -> bool:
@@ -111,7 +118,8 @@ def main() -> None:
         d = d[(d["min"] >= zac + PRIJEZDY[0]) & (d["min"] <= zac + PRIJEZDY[1])]
         return d.groupby("SourceHexagonId")[sloupec].sum()
 
-    radky, puvod = [], []
+    po_case = p.groupby("cas")[["rezidenti", "celkem"]].sum().to_dict()
+    radky, puvod, profil = [], [], []
     for _, q in zapasy.iterrows():
         den, buly = pd.Timestamp(q["datum"]), q["buly"]
         zaklad = [d for d in klidne
@@ -120,10 +128,12 @@ def main() -> None:
                             buly + pd.Timedelta(minutes=PRITOMNI[1]), freq="15min")
         bl = [np.nanmedian([v.get(d + (t - den), np.nan) for d in zaklad]) for t in idx]
         navic = pd.Series(v.reindex(idx).to_numpy() - np.array(bl), idx)
-        rez = okno(den, buly, "rezidenti")
-        zakl = pd.concat([okno(d, buly, "rezidenti") for d in zaklad])
-        zakl = zakl.groupby(level=0).sum() / len(zaklad)
-        rozdil = rez.sub(zakl, fill_value=0)
+        rozdily = {}
+        for sl in ("rezidenti", "celkem"):
+            zakl = pd.concat([okno(d, buly, sl) for d in zaklad])
+            zakl = zakl.groupby(level=0).sum() / len(zaklad)
+            rozdily[sl] = okno(den, buly, sl).sub(zakl, fill_value=0)
+        rozdil = rozdily["rezidenti"]
         celkem = okno(den, buly, "celkem").sum()
         celkem_bl = np.median([okno(d, buly, "celkem").sum() for d in zaklad])
         radky.append({
@@ -133,14 +143,27 @@ def main() -> None:
             "prijezdy_navic": round(celkem - celkem_bl),
             "rezidenti_navic": round(rozdil.sum()), "dnu_baseline": len(zaklad),
         })
-        puvod.append(pd.DataFrame(
-            {"hex": rozdil.index, "datum": q["datum"], "navic": rozdil.to_numpy()}))
+        puvod.append(pd.DataFrame({"navic": rozdily["rezidenti"], "navic_vse": rozdily["celkem"]})
+                     .fillna(0).rename_axis("hex").reset_index().assign(datum=q["datum"]))
+        for posun in range(PRIJEZDY[0], 105, 15):
+            cas = buly + pd.Timedelta(minutes=posun)
+            profil.append({"datum": q["datum"], "minut_od_buly": posun,
+                           "rezidenti": po_case["rezidenti"].get(cas, 0),
+                           "navstevnici": po_case["celkem"].get(cas, 0)
+                           - po_case["rezidenti"].get(cas, 0)})
 
     VYSTUP.mkdir(parents=True, exist_ok=True)
     pd.DataFrame(radky).to_csv(VYSTUP / "zapasy_odhad.csv", index=False, lineterminator="\n")
+    pd.DataFrame(profil).to_csv(VYSTUP / "profil_prijezdu.csv", index=False, lineterminator="\n")
     puvod = pd.concat(puvod, ignore_index=True)
     puvod = puvod.join(uzemi(sorted(puvod["hex"].unique())), on="hex")
+    puvod["pasmo_km"] = pd.cut(puvod["hex"].map(
+        {x: vzdalenost(x) for x in puvod["hex"].unique()}), PASMA_KM, include_lowest=True)
+    for soubor, sl in (("zapasy_okresy", ["kraje", "okresy"]), ("zapasy_vzdalenost", ["pasmo_km"])):
+        g = puvod.groupby(["datum", *sl], observed=True)[["navic", "navic_vse"]].sum()
+        g.reset_index().round(3).to_csv(VYSTUP / f"{soubor}.csv", index=False, lineterminator="\n")
     celkem = puvod["navic"].sum()
+    na_zapas = puvod.groupby("datum")["navic"].sum()
     mimo = puvod.loc[puvod["obce"].isna(), "navic"].sum()
     print(f"rezidentů navíc: {celkem:.0f}, z toho mimo hranice ČR: {mimo:.0f}")
     for uroven in ("kraje", "okresy", "orp", "obce", "brno_casti"):
@@ -151,6 +174,8 @@ def main() -> None:
         # rozptyl mezi zápasy zahrnuje šum i skutečné rozdíly mezi zápasy
         t["smer_chyba"] = m.std(axis=1, ddof=1) * np.sqrt(m.shape[1])
         t["podil"] = t["navic_celkem"] / celkem
+        # každý zápas má stejnou váhu (úroveň dat se mezi obdobími mění)
+        t["podil_prumer"] = (m / na_zapas.reindex(m.columns)).mean(axis=1)
         t["zapasu_kladne"] = (m > 0).sum(axis=1)
         t["spolehlive"] = t["navic_celkem"] > 3 * t["smer_chyba"]
         t = t.sort_values("navic_celkem", ascending=False).reset_index()
