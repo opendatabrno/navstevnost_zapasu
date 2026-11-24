@@ -1,6 +1,7 @@
 """Vytvoří z výsledků zpracuj_intiq.py přehled s mapou a grafy.
 
-Výstup:  data/processed/prehled.html (negitováno – nezveřejňovat, dokud není jasná licence)
+Výstup:  web/index.html (zveřejňuje se ve větvi gh-pages) a kopie
+         data/processed/prehled.html; ve větvi s kódem obojí negitováno
 Použití: python scripts/vytvor_prehled.py
 """
 
@@ -102,7 +103,7 @@ def mapa(g: gpd.GeoDataFrame, w: int, obrysy: gpd.GeoDataFrame, popis: str,
         if r.spolehlive and not (na1000 and r.obyvatel < MIN_OBYVATEL):
             fill, stav = f"var(--q{trida(h1, prahy)})", hodnota
         elif r.ma_data:
-            fill, stav = "var(--nejiste)", f"{hodnota} (nespolehlivé)"
+            fill, stav = "var(--nejiste)", "málo dat, hodnotu neuvádíme"
         else:
             fill, stav = "var(--prazdne)", "bez příjezdů"
         o.append(f'<path d="{cesta(r.geometry, fx, fy)}" fill="{fill}" class=uz '
@@ -508,8 +509,10 @@ def main() -> None:
         + graf_soupere(z, okr)
         + grafy_akci(z)
         + "</div>")
-    vystup = DATA / "prehled.html"
-    vystup.write_text(SABLONA.replace("@DLAZDICE@", dlazdice).replace("@TELO@", telo), encoding="utf-8")
+    vystup = ROOT / "web" / "index.html"
+    stranka = SABLONA.replace("@DLAZDICE@", dlazdice).replace("@TELO@", telo)
+    for soubor in (vystup, DATA / "prehled.html"):
+        soubor.write_text(stranka, encoding="utf-8")
     print(f"{vystup} ({vystup.stat().st_size / 1e6:.1f} MB)")
 
 
@@ -547,7 +550,7 @@ table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}th,t
 </style></head><body><main>
 <h1>Odkud jezdí fanoušci HC Kometa Brno</h1>
 <p class=popis>Domácí zápasy ve Winning Group Aréně, leden 2024 – říjen 2026. Odhad z dat mobilní sítě O2 (Intiq), hexagon haly.</p>
-<div class=varovani><b>Interní podklad, nezveřejňovat.</b> Licence dat Intiq není vyjasněná. Původ je jen u lidí, kteří přijeli
+<div class=varovani><b>Jak výsledky číst.</b> Jde o odhad z dat jednoho operátora, ne o sčítání. Původ je jen u lidí, kteří přijeli
 přímo z domova (asi polovina příchozích); kdo se cestou zastavil, v mapě chybí. Malé hodnoty zkresluje anonymizační šum.</div>
 <div class=dlazdice>@DLAZDICE@</div>
 @TELO@
