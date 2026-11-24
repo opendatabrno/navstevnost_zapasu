@@ -21,6 +21,9 @@ OKRUH_M = 65_000
 PRAHY = [0.0005, 0.001, 0.0025, 0.005, 0.01]  # hranice tříd podílu v mapě
 PRAHY_1000_OBCE = [0.5, 1, 2, 4, 6]  # hranice tříd na 1 000 obyvatel
 PRAHY_1000_OKRESY = [0.02, 0.05, 0.25, 1, 2]
+MESTA = ("Blansko", "Vyškov", "Břeclav", "Znojmo", "Třebíč", "Prostějov", "Hodonín", "Boskovice",
+         "Tišnov", "Ivančice", "Kyjov", "Velké Meziříčí", "Mikulov")  # popisky v mapě
+MIN_OBYVATEL_ZEBRICEK = 2000
 MIN_OBYVATEL = 500  # menší obce se na 1 000 obyvatel nehodnotí
 OKRES_SOUPERE = {
     "Sparta": "Praha", "Pardubice": "Pardubice", "Olomouc": "Olomouc", "Litvínov": "Most",
@@ -47,7 +50,7 @@ def tabulka(hlava: list[str], radky: list[list[str]]) -> str:
 
 
 def karta(nadpis: str, popis: str, obsah: str, tab: str, cls: str = "") -> str:
-    return (f'<section class="karta {cls}"><h2>{esc(nadpis)}</h2><p class=popis>{esc(popis)}</p>'
+    return (f'<section class="karta {cls}"><h3>{esc(nadpis)}</h3><p class=popis>{esc(popis)}</p>'
             f"{obsah}{tab}</section>")
 
 
@@ -84,7 +87,8 @@ def trida(x: float, prahy: list[float]) -> int:
 
 
 def mapa(g: gpd.GeoDataFrame, w: int, obrysy: gpd.GeoDataFrame, popis: str,
-         sloupec: str = "podil_prumer", prahy: list[float] = PRAHY) -> str:
+         sloupec: str = "podil_prumer", prahy: list[float] = PRAHY,
+         kruhy: tuple[int, ...] = (), mesta: tuple[str, ...] = ()) -> str:
     na1000 = sloupec == "na1000"
     x0, y0, x1, y1 = g.total_bounds
     m = w / (x1 - x0)
@@ -111,7 +115,16 @@ def mapa(g: gpd.GeoDataFrame, w: int, obrysy: gpd.GeoDataFrame, popis: str,
     for r in obrysy.itertuples():
         o.append(f'<path d="{cesta(r.geometry, fx, fy)}" class=obrys />')
     hala = gpd.GeoSeries(gpd.points_from_xy([HALA[0]], [HALA[1]]), crs=4326).to_crs(5514).iloc[0]
-    o.append(f'<circle cx="{fx(hala.x):.1f}" cy="{fy(hala.y):.1f}" r="5" class=hala data-tip="Hala|"/>')
+    for km in kruhy:
+        r = km * 1000 * m
+        o.append(f'<circle cx="{fx(hala.x):.1f}" cy="{fy(hala.y):.1f}" r="{r:.1f}" class=kruh />'
+                 f'<text x="{fx(hala.x) - r:.1f}" y="{fy(hala.y) + 5:.1f}" class=km text-anchor=middle>{km} km</text>')
+    # stejnojmenných obcí je víc, popisek patří největší
+    for r in g[g["nazev"].isin(mesta)].sort_values("obyvatel").drop_duplicates("nazev", keep="last").itertuples():
+        trida_popisku = "mesto" if mesta.index(r.nazev) < 7 else '"mesto maly"'
+        b = r.geometry.representative_point()
+        o.append(f'<text x="{fx(b.x):.1f}" y="{fy(b.y):.1f}" class={trida_popisku} text-anchor=middle>{esc(r.nazev)}</text>')
+    o.append(f'<circle cx="{fx(hala.x):.1f}" cy="{fy(hala.y):.1f}" r="7" class=hala data-tip="Winning Group Arena|"/>')
     return svg(w, h, "".join(o), popis)
 
 
@@ -147,7 +160,7 @@ def legenda_1000(prahy: list[float]) -> str:
     f = [cz(x, 2).rstrip("0").rstrip(",") for x in prahy]
     pol = [(f"do {f[0]}", "var(--q1)")]
     pol += [(f"{f[i]} – {f[i + 1]}", f"var(--q{i + 2})") for i in range(4)]
-    pol += [(f"{f[4]} a víc", "var(--q6)"), ("nespolehlivé nebo málo obyvatel", "var(--nejiste)"),
+    pol += [(f"{f[4]} a víc", "var(--q6)"), ("málo dat nebo obyvatel", "var(--nejiste)"),
             ("bez příjezdů", "var(--prazdne)")]
     return legenda(pol)
 
@@ -156,12 +169,25 @@ def legenda_mapy() -> str:
     b = [0, *PRAHY]
     pol = [(f"do {pct(b[1], 2)}", "var(--q1)")]
     pol += [(f"{pct(b[i], 2)} – {pct(b[i + 1], 2)}", f"var(--q{i + 1})") for i in range(1, 5)]
-    pol += [(f"{pct(b[5], 0)} a víc", "var(--q6)"), ("nespolehlivé (šum)", "var(--nejiste)"),
+    pol += [(f"{pct(b[5], 0)} a víc", "var(--q6)"), ("málo dat", "var(--nejiste)"),
             ("bez příjezdů", "var(--prazdne)")]
     return legenda(pol)
 
 
-def karty_map() -> str:
+def zebricek(d: pd.DataFrame, sloupec: str, fmt, nadpis: str) -> str:
+    d = d.nlargest(10, sloupec)
+    mx = d[sloupec].max()
+    return f"<h3>{esc(nadpis)}</h3><ol class=zeb>" + "".join(
+        f'<li><span>{esc(r.nazev)}</span><span>{fmt(getattr(r, sloupec))}</span>'
+        f'<i style="width:{100 * getattr(r, sloupec) / mx:.1f}%"></i></li>' for r in d.itertuples()) + "</ol>"
+
+
+def prepinac(klic: str, polozky: list[tuple[str, str]]) -> str:
+    return "<div class=prep>" + "".join(
+        f'<button type="button" data-k="{klic}" data-v="{v}">{esc(n)}</button>' for v, n in polozky) + "</div>"
+
+
+def karta_map() -> str:
     obce = vrstva("obce", 60)
     casti = vrstva("brno_casti", 30)
     hala = gpd.GeoSeries(gpd.points_from_xy([HALA[0]], [HALA[1]]), crs=4326).to_crs(5514).iloc[0]
@@ -172,44 +198,46 @@ def karty_map() -> str:
     kraje = vrstva("kraje", 300)
     praha = kraje[kraje["nazev"].str.contains("Praha")].assign(kod=0, nazev="Praha")
     okr = s_podilem(pd.concat([vrstva("okresy", 300), praha]), "okresy")
-    ramec = box(*g.total_bounds)
+    ramec = box(*g.total_bounds).intersection(hala.buffer(OKRUH_M + 1500))
     obrys = okresy[okresy.intersects(ramec)].copy()
     obrys["geometry"] = obrys.geometry.make_valid().boundary.intersection(ramec)
 
-    top = g[g["spolehlive"]].nlargest(25, "podil_prumer")
-    t1 = tabulka(["Území", "Podíl rezidentů"], [[r.nazev, pct(r.podil_prumer, 2)] for r in top.itertuples()])
-    topo = okr[okr["spolehlive"]].nlargest(20, "podil_prumer")
-    t2 = tabulka(["Okres", "Podíl rezidentů"], [[r.nazev, pct(r.podil_prumer, 2)] for r in topo.itertuples()])
-    leg = legenda_mapy()
-    popis = ("Podíl na příjezdech lidí, kteří přijeli přímo z domova, po odečtení baseline. Průměr "
-             "zápasů, každý má stejnou váhu. Větší území mají přirozeně víc lidí.")
-    return (karta("Odkud fanoušci jezdí: Brno po městských částech a obce do 65 km", popis,
-                  leg + mapa(g, 1000, obrys, "Mapa podílu podle obcí"), t1, "siroka")
-            + karta("Odkud fanoušci jezdí: okresy Česka", popis,
-                    leg + mapa(okr, 1000, okr.iloc[:0], "Mapa podílu podle okresů"), t2, "siroka")
-            + karta_1000(g, obrys, okr))
+    def panel(uzemi: str, ukazatel: str) -> str:
+        na1000 = ukazatel == "na1000"
+        d = g if uzemi == "okoli" else okr
+        sl = "na1000" if na1000 else "podil_prumer"
+        prahy = PRAHY if not na1000 else PRAHY_1000_OBCE if uzemi == "okoli" else PRAHY_1000_OKRESY
+        if uzemi == "okoli":
+            m = mapa(d, 1000, obrys, "Mapa okolí Brna", sl, prahy, (20, 50), MESTA)
+        else:
+            m = mapa(d, 1000, okr.iloc[:0], "Mapa okresů Česka", sl, prahy)
+        hod = d[d["spolehlive"]]
+        if na1000:
+            hod = hod[hod["obyvatel"] >= MIN_OBYVATEL]
+            pozn = ("Lidé, kteří přijeli na typický zápas přímo z domova, na 1 000 obyvatel (1. 1. 2026). "
+                    "Skutečná účast je vyšší, protože měříme asi polovinu příchozích. Poloha v síti je hrubá "
+                    f"a sousední obce se můžou prolínat; obce pod {MIN_OBYVATEL} obyvatel nehodnotíme.")
+            tab = tabulka(["Území", "Obyvatel", "Na 1 000"],
+                          [[r.nazev, cz(r.obyvatel, 0), cz(r.na1000, 2)] for r in hod.nlargest(40, sl).itertuples()])
+        else:
+            pozn = ("Podíl na všech, kdo přijeli přímo z domova. Průměr zápasů, každý má stejnou váhu. "
+                    "Větší území mají přirozeně víc lidí.")
+            tab = tabulka(["Území", "Podíl"],
+                          [[r.nazev, pct(r.podil_prumer, 2)] for r in hod.nlargest(40, sl).itertuples()])
+        if na1000 and uzemi == "okoli":  # malé obce kolísají, do žebříčku jen větší
+            zeb = zebricek(hod[hod["obyvatel"] >= MIN_OBYVATEL_ZEBRICEK], sl, cz,
+                           f"Nejvíc, nad {cz(MIN_OBYVATEL_ZEBRICEK, 0)} obyvatel")
+        else:
+            zeb = zebricek(hod, sl, cz if na1000 else pct, "Nejvíc")
+        leg = legenda_1000(prahy) if na1000 else legenda_mapy()
+        return (f'<div class=panel data-m="{uzemi}-{ukazatel}"><div class=vlevo>{leg}{m}</div>'
+                f"<div>{zeb}"
+                f"<p class=popis>{esc(pozn)}</p>{tab}</div></div>")
 
-
-def karta_1000(g: gpd.GeoDataFrame, obrys: gpd.GeoDataFrame, okr: gpd.GeoDataFrame) -> str:
-    popis = ("Kolik lidí přijelo na typický zápas přímo z domova na 1 000 obyvatel (ČSÚ, MV ČR, "
-             "1. 1. 2026). Jen měřená polovina příchozích, skutečná účast je vyšší. Poloha v síti je "
-             f"hrubá, sousední obce se mohou prolínat; obce pod {MIN_OBYVATEL} obyvatel nehodnotíme.")
-    hod = g[g["spolehlive"] & (g["obyvatel"] >= MIN_OBYVATEL)].nlargest(40, "na1000")
-    hodo = okr[okr["spolehlive"]].nlargest(20, "na1000")
-
-    def tab(d, prvni):
-        return tabulka([prvni, "Obyvatel", "Na 1 000 obyvatel"],
-                       [[r.nazev, cz(r.obyvatel, 0), cz(r.na1000, 2)] for r in d.itertuples()])
-
-    return (karta("Odkud jezdí nejvíc lidí vůči počtu obyvatel: obce a městské části", popis,
-                  legenda_1000(PRAHY_1000_OBCE)
-                  + mapa(g, 1000, obrys, "Mapa na 1 000 obyvatel podle obcí", "na1000", PRAHY_1000_OBCE),
-                  tab(hod, "Území"), "siroka")
-            + karta("Okresy na 1 000 obyvatel", popis,
-                    legenda_1000(PRAHY_1000_OKRESY)
-                    + mapa(okr, 1000, okr.iloc[:0], "Mapa na 1 000 obyvatel podle okresů", "na1000",
-                           PRAHY_1000_OKRESY),
-                    tab(hodo, "Okres"), "siroka"))
+    return ("<div class=karta><div class=ovl>"
+            + prepinac("uzemi", [("okoli", "Brno a okolí"), ("cesko", "Celé Česko")])
+            + prepinac("ukazatel", [("podil", "Podíl fanoušků"), ("na1000", "Na 1 000 obyvatel")]) + "</div>"
+            + "".join(panel(u, k) for u in ("okoli", "cesko") for k in ("podil", "na1000")) + "</div>")
 
 
 # ---------- grafy ----------
@@ -241,7 +269,7 @@ def graf_vzdalenost() -> str:
     krok = (w - 6 - x0) / len(poradi)
     radky = []
     for i, k in enumerate(poradi):
-        for j, (sl, barva, jm) in enumerate((("navic", "--s1", "Rezidenti"), ("nav", "--s2", "Návštěvníci"))):
+        for j, (sl, barva, jm) in enumerate((("navic", "--s1", "Přímo z domova"), ("nav", "--s2", "Odjinud"))):
             v = max(p[sl][k], 0)
             x = x0 + i * krok + krok / 2 - 21 + j * 22
             t, b = fy(v), y1
@@ -253,11 +281,11 @@ def graf_vzdalenost() -> str:
         radky.append([nazvy[i], pct(p["navic"][k]), pct(p["nav"][k])])
     o += f'<text x="{(w + x0) / 2}" y="{y1 + 38}" class=osa text-anchor=middle>vzdálenost od haly (km)</text>'
     return karta("Jak daleko lidé na hokej jezdí",
-                 "Podíl příjezdů podle vzdálenosti výchozího hexagonu. U návštěvníků jde o poslední "
+                 "Podíl příjezdů podle vzdálenosti. U lidí, kteří nepřijeli z domova, jde o poslední "
                  "zastávku, ne o bydliště.",
-                 legenda([("Rezidenti (z domova)", "var(--s1)"), ("Návštěvníci (odjinud)", "var(--s2)")])
+                 legenda([("Přímo z domova", "var(--s1)"), ("Odjinud (poslední zastávka)", "var(--s2)")])
                  + svg(w, h, o, "Sloupcový graf vzdáleností"),
-                 tabulka(["Pásmo (km)", "Rezidenti", "Návštěvníci"], radky))
+                 tabulka(["Pásmo (km)", "Přímo z domova", "Odjinud"], radky))
 
 
 def graf_profil() -> str:
@@ -286,8 +314,8 @@ def graf_profil() -> str:
     o += (f'<line x1="{xb:.1f}" x2="{xb:.1f}" y1="{y0}" y2="{y1}" class=ref />'
           f'<text x="{(w + x0) / 2}" y="{y1 + 38}" class=osa text-anchor=middle>čas od buly</text>')
     return karta("Kdy lidé přijíždějí",
-                 "Rozložení příjezdů do hexagonu haly po 15 minutách, průměr zápasů. Baseline zde "
-                 "není odečtená; síť telefon zaznamená typicky jednou za 30 minut.",
+                 "Příjezdy do okolí haly po 15 minutách, průměr zápasů. Běžný provoz tu "
+                 "není odečtený; síť telefon zaznamená typicky jednou za 30 minut.",
                  svg(w, h, o, "Sloupcový graf příjezdů v čase"),
                  tabulka(["Interval od buly (min)", "Podíl příjezdů"],
                          [[f"{k:+d} až {k + 15:+d}", pct(v)] for k, v in pod.items()]))
@@ -345,8 +373,8 @@ def grafy_akci(z: pd.DataFrame) -> str:
         (n, ak.loc[ak["sk"] == n, "mimo_jmk"])
         for n in ("Koncerty", "MMA (OKTAGON)", "Neurčené akce", "Univerzitní hokej")]
     body = graf_body(
-        "Hokej a jiné akce: kolik lidí je z jiných krajů",
-        "Podíl rezidentů z jiných krajů, průměr akcí a 95% interval. Jiné akce jsou určené z dat "
+        "Kolik lidí je z jiných krajů",
+        "Podíl lidí z jiných krajů, průměr akcí a 95% interval. Jiné akce jsou určené z dat "
         "(hodně lidí v hale ve dni bez zápasu), druh je doložený jen u části. „Všechny jiné akce“ "
         "jsou bez univerzitního hokeje. U 2–3 akcí je interval jen orientační.",
         sk, "podíl z jiných krajů", 170, "Akcí")
@@ -379,8 +407,8 @@ def grafy_akci(z: pd.DataFrame) -> str:
         o += f'<text x="{x0 + (i + .5) * krok:.1f}" y="{y1 + 18}" class=osa text-anchor=middle>{nazvy[i]}</text>'
     o += f'<text x="{(w + x0) / 2}" y="{y1 + 38}" class=osa text-anchor=middle>vzdálenost od haly (km)</text>'
     vzd = karta(
-        "Hokej a jiné akce: jak daleko lidé jezdí",
-        "Podíl rezidentů podle vzdálenosti bydliště, průměr akcí. Jiné akce bez univerzitního hokeje.",
+        "Jak daleko lidé na akce jezdí",
+        "Podíl lidí podle vzdálenosti bydliště, průměr akcí. Jiné akce jsou bez univerzitního hokeje.",
         legenda([("Zápasy Komety", "var(--s1)"), ("Jiné akce", "var(--s3)")])
         + svg(w, h, o, "Sloupcový graf vzdáleností pro hokej a jiné akce"),
         tabulka(["Pásmo (km)", "Zápasy Komety", "Jiné akce"],
@@ -421,7 +449,7 @@ def graf_soupere(z: pd.DataFrame, okr: pd.DataFrame) -> str:
               f'data-tip="{esc(s)} (okres {esc(okres)}, zápasů: {n})|na tento zápas {cz(a)}, na ostatní {cz(b)} lidí navíc"/>')
     o += f'<text x="{(w + x0) / 2}" y="{dole + 36}" class=osa text-anchor=middle>příjezdů navíc na zápas</text>'
     return karta("Přijíždějí hosté? Příjezdy z okresu soupeře",
-                 "Lidé, jejichž poslední zastávka byla v okrese soupeře (rezidenti i návštěvníci). "
+                 "Lidé, kteří na zápas vyjeli z okresu soupeře. "
                  "Počty jsou malé a zatížené šumem; kdo se cestou zastavil, chybí.",
                  legenda([("zápas s tímto soupeřem", "var(--s1)"), ("ostatní zápasy", "var(--s2)")])
                  + svg(w, h, o, "Příjezdy z okresu soupeře"),
@@ -453,7 +481,7 @@ def graf_navsteva(z: pd.DataFrame) -> str:
               f'odhad {cz(r.pritomni_navic, 0)}"/>')
     o += f'<text x="{(w + x0) / 2}" y="{y1 + 38}" class=osa text-anchor=middle>oficiální návštěva</text>'
     return karta("Odhad z mobilní sítě a oficiální návštěva",
-                 "Přítomní návštěvníci ve špičce zápasu minus baseline. Odhad je soustavně nižší a jeho "
+                 "Lidé navíc proti běžnému dni ve špičce zápasu. Odhad je soustavně nižší a jeho "
                  "úroveň se mezi obdobími mění.",
                  legenda(list(zip(jmena, barvy))) + svg(w, h, o, "Bodový graf návštěvnosti"),
                  tabulka(["Datum", "Soupeř", "Oficiálně", "Odhad"],
@@ -487,82 +515,80 @@ def main() -> None:
     soup = sorted(((s, sk((z["souper"] == s) & liga)) for s in z.loc[liga, "souper"].unique()),
                   key=lambda t: -t[1].mean())
 
-    dlazdice = "".join(
-        f"<div class=dl><span>{esc(a)}</span><b>{esc(b)}</b></div>" for a, b in (
-            ("Zápasů s daty", f"{len(z)} z {len(pd.read_csv(ROOT / 'data' / 'zapasy.csv'))}"),
-            ("Z Brna", pct(z["brno"].mean(), 0)),
-            ("Z Jihomoravského kraje", pct(1 - z["mimo_jmk"].mean(), 0)),
-            ("Z jiných krajů", pct(z["mimo_jmk"].mean(), 1)),
-            ("Přijelo přímo z domova", pct((z["rezidenti_navic"] / z["prijezdy_navic"]).mean(), 0))))
-    popis_mimo = ("Podíl rezidentů z jiných krajů, průměr zápasů a 95% interval. V závorce počet zápasů; "
+    popis_mimo = ("Podíl lidí z jiných krajů, průměr zápasů a 95% interval. V závorce počet zápasů; "
                   "u malých počtů je interval orientační.")
+    brno_p, mimo_p = z["brno"].mean(), z["mimo_jmk"].mean()
+    casti = [("z Brna", brno_p, "#ffffff"), ("ze zbytku Jihomoravského kraje", 1 - brno_p - mimo_p, "#6da7ec"),
+             ("z jiných krajů", mimo_p, "#eb6834")]
+    skala = ("<div class=skala><div class=pruh>"
+             + "".join(f'<i style="flex:{p:.4f};background:{b}"></i>' for _, p, b in casti) + "</div><div class=pop>"
+             + "".join(f'<div style="--b:{b}"><b>{pct(p, 0)}</b>{esc(n)}</div>' for n, p, b in casti) + "</div></div>")
+
+    vz = pd.read_csv(DATA / "zapasy_vzdalenost.csv")
+    vz = vz.pivot(index="datum", columns="pasmo_km", values="navic").fillna(0)
+    vz = vz.div(vz.sum(axis=1), axis=0).mean()
+    do8 = vz[["(-0.001, 1.0]", "(1.0, 3.0]", "(3.0, 8.0]"]].sum()
+    nad50 = vz[["(50.0, 100.0]", "(100.0, 1000.0]"]].sum()
+    host = okr.pivot_table(index="datum", columns="okresy", values="navic_vse", aggfunc="sum")
+    host = host.reindex(z["datum"]).fillna(0)
+    hosti = [(o, host.loc[(z["souper"] == s).to_numpy(), o].mean(), host.loc[(z["souper"] != s).to_numpy(), o].mean())
+             for s, o in OKRES_SOUPERE.items() if o in host]
+    okres, na, jinde = max(hosti, key=lambda t: t[1])
+    ak = pd.read_csv(DATA / "akce_odhad.csv")
+    ak = ak.loc[ak["typ"] != "univerzitní hokej", "datum"]
+    ako = pd.read_csv(DATA / "akce_okresy.csv")
+    ako = ako.pivot_table(index="datum", columns="kraje", values="navic", aggfunc="sum").fillna(0).loc[ak]
+    ak_mimo = (1 - ako["Jihomoravský kraj"] / ako.sum(axis=1)).mean()
+    po, zc = dict(typy)["Play-off a předkolo"].mean(), dict(typy)["Základní část"].mean()
+
+    def kapitola(kod: str, nadpis: str, perex: str, obsah: str) -> str:
+        return f'<section class=kap id="{kod}"><h2>{esc(nadpis)}</h2><p class=perex>{perex}</p>{obsah}</section>'
+
+    def mriz(*karty: str) -> str:
+        return "<div class=mriz2>" + "".join(karty) + "</div>"
+
+    zvyr = (f'<div class="karta zvyr"><div class=dvoj><div><b>{pct(po)}</b><span>play-off a předkolo</span></div>'
+            f"<div><b>{pct(zc)}</b><span>základní část</span></div></div>"
+            "<p>Takový podíl lidí, kteří přijeli přímo z domova, bydlí v jiném kraji.</p></div>")
+    jak = ("<div class=karta><h3>Na co si dát pozor</h3><p class=popis>Než z čísel něco vyvodíte.</p><ul class=body>"
+           "<li>Jde o odhad z dat jednoho operátora, ne o sčítání diváků.</li>"
+           "<li>Počítáme rozdíl proti běžným dnům bez zápasu a bez jiné akce v hale.</li>"
+           "<li>Bydliště známe jen u lidí, kteří přijeli přímo z domova. To je asi polovina příchozích; "
+           "kdo se cestou zastavil, v mapě chybí.</li>"
+           "<li>Malé hodnoty zkresluje anonymizační šum, proto je u území s málo daty neuvádíme.</li>"
+           "<li>Úroveň odhadu se v čase mění, takže mezi sezónami porovnávejte podíly, ne počty.</li></ul></div>")
     telo = (
-        karty_map()
-        + "<div class=mriz2>"
-        + graf_vzdalenost() + graf_profil()
-        + graf_body("Kdy jezdí víc lidí z dálky: typ zápasu", popis_mimo, typy, "podíl z jiných krajů", 170)
-        + graf_navsteva(z)
-        + graf_body("Z jiných krajů podle sezóny", popis_mimo, sez, "podíl z jiných krajů", 110)
-        + graf_body("Z Brna podle sezóny", "Podíl rezidentů z Brna, průměr zápasů a 95% interval.", sezb,
-                    "podíl z Brna", 110)
-        + graf_body("Z jiných krajů podle soupeře", popis_mimo, soup, "podíl z jiných krajů", 140)
-        + graf_soupere(z, okr)
-        + grafy_akci(z)
-        + "</div>")
+        kapitola("mapa", "Odkud lidé jezdí",
+                 f"Z Jihomoravského kraje je <b>{pct(1 - mimo_p, 0)}</b> fanoušků, jen ze samotného Brna "
+                 f"<b>{pct(brno_p, 0)}</b>. Najeďte na obec, městskou část nebo okres.", karta_map())
+        + kapitola("cesta", "Jak daleko a kdy",
+                   f"Do 8 km od haly bydlí <b>{pct(do8, 0)}</b> lidí, kteří přijeli přímo z domova. "
+                   f"Z větší dálky než 50 km jich přijíždí <b>{pct(nad50, 0)}</b>.",
+                   mriz(graf_vzdalenost(), graf_profil()))
+        + kapitola("zapasy", "Kdy přijede víc lidí z dálky",
+                   "Srovnání podle typu zápasu a podle sezóny.",
+                   mriz(graf_body("Podle typu zápasu", popis_mimo, typy, "podíl z jiných krajů", 170), zvyr,
+                        graf_body("Z jiných krajů podle sezóny", popis_mimo, sez, "podíl z jiných krajů", 110),
+                        graf_body("Z Brna podle sezóny", "Podíl lidí z Brna, průměr zápasů a 95% interval.", sezb,
+                                  "podíl z Brna", 110)))
+        + kapitola("souperi", "Soupeři a hosté",
+                   f"Hosté jsou v datech vidět. Nejvíc jich přijíždí z okresu {esc(okres)}: průměrně <b>{cz(na, 0)}</b> "
+                   f"příjezdů navíc na zápas s tamním týmem, na ostatní zápasy <b>{cz(jinde, 0)}</b>.",
+                   mriz(graf_body("Z jiných krajů podle soupeře", popis_mimo, soup, "podíl z jiných krajů", 140),
+                        graf_soupere(z, okr)))
+        + kapitola("akce", "Hokej a jiné akce v hale",
+                   f"Na koncertech a dalších akcích je z jiných krajů <b>{pct(ak_mimo, 0)}</b> lidí, "
+                   f"na zápasech Komety <b>{pct(mimo_p, 0)}</b>.", mriz(grafy_akci(z)))
+        + kapitola("odhad", "Jak výsledky číst",
+                   "Odhad z mobilní sítě je nižší než oficiální návštěvnost, proto pracujeme hlavně s podíly.",
+                   mriz(graf_navsteva(z), jak)))
     vystup = ROOT / "web" / "index.html"
-    stranka = SABLONA.replace("@DLAZDICE@", dlazdice).replace("@TELO@", telo)
+    stranka = (Path(__file__).with_name("sablona.html").read_text(encoding="utf-8")
+               .replace("@POCET@", str(len(z))).replace("@SKALA@", skala).replace("@TELO@", telo))
     for soubor in (vystup, DATA / "prehled.html"):
         soubor.write_text(stranka, encoding="utf-8")
     print(f"{vystup} ({vystup.stat().st_size / 1e6:.1f} MB)")
 
-
-SABLONA = """<!doctype html>
-<html lang="cs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Odkud jezdí fanoušci HC Kometa Brno</title>
-<style>
-:root{color-scheme:light;--plocha:#fcfcfb;--pozadi:#f3f2ef;--text:#0b0b0b;--text2:#52514e;--mriz:#e4e3de;
---s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--q1:#cde2fb;--q2:#9ec5f4;--q3:#6da7ec;--q4:#3987e5;--q5:#1c5cab;--q6:#0d366b;
---nejiste:#dedcd6;--prazdne:#f3f2ef;--obrys:#52514e}
-@media (prefers-color-scheme:dark){:root{color-scheme:dark;--plocha:#1a1a19;--pozadi:#111110;--text:#f0efec;--text2:#c3c2b7;
---mriz:#383835;--s1:#3987e5;--s2:#d95926;--s3:#199e70;--q1:#0d366b;--q2:#184f95;--q3:#256abf;--q4:#3987e5;--q5:#86b6ef;
---q6:#cde2fb;--nejiste:#3d3c39;--prazdne:#232321;--obrys:#c3c2b7}}
-*{box-sizing:border-box}body{margin:0;background:var(--pozadi);color:var(--text);font:15px/1.45 system-ui,"Segoe UI",sans-serif}
-main{max-width:1120px;margin:0 auto;padding:28px 16px 60px}h1{font-size:26px;margin:0 0 6px}
-h2{font-size:17px;margin:0 0 4px}.popis{margin:0 0 12px;color:var(--text2);font-size:13.5px}
-.varovani{background:var(--plocha);border-left:3px solid var(--text2);padding:10px 14px;margin:16px 0;font-size:14px}
-.karta{background:var(--plocha);border-radius:10px;padding:18px;margin:16px 0;min-width:0}
-.mriz2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:16px;align-items:start}
-.mriz2 .karta{margin:0}.mriz2+.popis{margin-top:20px}svg{width:100%;height:auto;display:block}
-.dlazdice{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:18px 0}
-.dl{background:var(--plocha);border-radius:10px;padding:12px 14px}.dl span{display:block;font-size:13px;color:var(--text2)}
-.dl b{font-size:26px;font-weight:600}
-.leg{display:flex;flex-wrap:wrap;gap:4px 16px;margin:0 0 10px;font-size:13px;color:var(--text2)}
-.leg span{display:inline-flex;align-items:center;gap:6px}.leg i{width:12px;height:12px;border-radius:3px;display:inline-block}
-.uz{stroke:var(--plocha);stroke-width:.5}.uz:hover{stroke:var(--text);stroke-width:1.5}
-.obrys{fill:none;stroke:var(--obrys);stroke-width:.9;pointer-events:none}
-.hala{fill:var(--s2);stroke:var(--plocha);stroke-width:2}.bod{stroke:var(--plocha);stroke-width:2}
-.mriz{stroke:var(--mriz);stroke-width:1}.ref{stroke:var(--text2);stroke-width:1}.inter{stroke:var(--text2);stroke-width:2;stroke-linecap:round}
-text{fill:var(--text2);font-size:12px}.popisek{fill:var(--text);font-size:12.5px}.stitek{font-size:12px}.osa{font-variant-numeric:tabular-nums}
-details{margin-top:10px;font-size:13px}summary{cursor:pointer;color:var(--text2)}.tab{max-height:320px;overflow:auto;margin-top:8px}
-table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}th,td{text-align:left;padding:4px 8px;border-bottom:1px solid var(--mriz)}
-#tip{position:fixed;pointer-events:none;background:var(--text);color:var(--plocha);padding:6px 9px;border-radius:6px;font-size:13px;display:none;max-width:280px;z-index:9}
-#tip b{display:block}
-</style></head><body><main>
-<h1>Odkud jezdí fanoušci HC Kometa Brno</h1>
-<p class=popis>Domácí zápasy ve Winning Group Aréně, leden 2024 – říjen 2026. Odhad z dat mobilní sítě O2 (Intiq), hexagon haly.</p>
-<div class=varovani><b>Jak výsledky číst.</b> Jde o odhad z dat jednoho operátora, ne o sčítání. Původ je jen u lidí, kteří přijeli
-přímo z domova (asi polovina příchozích); kdo se cestou zastavil, v mapě chybí. Malé hodnoty zkresluje anonymizační šum.</div>
-<div class=dlazdice>@DLAZDICE@</div>
-@TELO@
-<p class=popis>Zdroje: Intiq / O2 (mobilní data), hokej.cz (kalendář a návštěvnost), ČÚZK – RÚIAN (hranice), ČSÚ a MV ČR (obyvatelstvo).</p>
-</main><div id=tip></div><script>
-const t=document.getElementById('tip');
-document.addEventListener('mousemove',e=>{const el=e.target.closest('[data-tip]');if(!el){t.style.display='none';return}
-const [a,b]=el.dataset.tip.split('|');t.replaceChildren(Object.assign(document.createElement('b'),{textContent:a}),b||'');
-t.style.display='block';const w=t.offsetWidth,h=t.offsetHeight;
-t.style.left=Math.min(e.clientX+14,innerWidth-w-8)+'px';t.style.top=Math.max(8,Math.min(e.clientY+14,innerHeight-h-8))+'px'});
-</script></body></html>
-"""
 
 if __name__ == "__main__":
     main()
