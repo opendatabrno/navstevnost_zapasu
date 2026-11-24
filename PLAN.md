@@ -14,7 +14,7 @@ Zdroj: uživatelská příručka INTIQ IQ Modules (SW 4.8.0) a prohlížení mod
 | **Původ** | Protější hexagon cesty. Oblast B je volitelná; bez ní jsou vidět cesty ze všech oblastí, i mimo Brno. |
 | **Čas** | Od 1. 1. 2024, aktualizace měsíčně, zdroj po 15 minutách. Telefon se ale síti hlásí typicky každých 30 minut → 15minutový krok je jemnější než skutečná přesnost. |
 | **Anonymizace** | Příručka nezmiňuje skrývání malých hodnot, ale differential privacy (šum); zkreslení hlavně u hodnot do 10. |
-| **Export** | Z UI, vyžaduje oprávnění, vždy 15minutová data; velké exporty dělit na kratší období. Formát zatím neověřen (zkušební export nestažen). |
+| **Export** | Z UI, vyžaduje oprávnění, vždy 15minutová data; velké exporty dělit na kratší období. CSV (čárka, UTF-8), řádek = zdrojový hexagon × cílový hexagon × 15 min, sloupce pro 4 kategorie; nulové řádky chybí. **Časy jsou v UTC** → převést na Europe/Prague. Původ je hexagon H3 rozlišení 9, obec se doplní prostorovým spojením s RÚIAN. V panelu Claude je nutný klik člověka (otevírá novou kartu). |
 | **Licence** | Příručka ani veřejné zdroje ji neuvádějí → **otevřené**, před publikací dořešit. |
 
 **Pilot** – dva domácí zápasy s rozdílnou návštěvou: Luleå 18. 11. 2025 (2 142 diváků) a finále s Pardubicemi 27. 4. 2025 (7 700). Přítomnost v okně zápasu na velikost návštěvy zřetelně reaguje; baseline zatím neodečtena.
@@ -29,7 +29,8 @@ Zdroj: uživatelská příručka INTIQ IQ Modules (SW 4.8.0) a prohlížení mod
 
 - V březnu 2024 jsou Přijíždějící a Vyjíždějící posunuté asi o hodinu vůči Přítomným; v dubnu a listopadu 2025 ne. Najít hranici posunu, než se budou sady spojovat.
 - Extrapolaci na celou populaci příručka popisuje jen u dopravy; u obyvatelstva ji ověřit.
-- Formát exportu a licence (viz tabulka).
+- Licence (viz tabulka).
+- Většina hodnot v exportu je menší než 10, tedy v pásmu, kde šum zkresluje nejvíc → ověřit, jak se to projeví po sečtení přes více zápasů.
 
 ## Fáze 1 – Kalendář zápasů
 
