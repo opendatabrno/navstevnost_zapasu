@@ -18,6 +18,9 @@ RUIAN = ROOT / "data" / "raw" / "ruian"
 HALA = (16.6053, 49.1856)  # přibližná poloha haly (lon, lat), jen značka v mapě
 OKRUH_M = 65_000
 PRAHY = [0.0005, 0.001, 0.0025, 0.005, 0.01]  # hranice tříd podílu v mapě
+PRAHY_1000_OBCE = [0.5, 1, 2, 4, 6]  # hranice tříd na 1 000 obyvatel
+PRAHY_1000_OKRESY = [0.02, 0.05, 0.25, 1, 2]
+MIN_OBYVATEL = 500  # menší obce se na 1 000 obyvatel nehodnotí
 OKRES_SOUPERE = {
     "Sparta": "Praha", "Pardubice": "Pardubice", "Olomouc": "Olomouc", "Litvínov": "Most",
     "Vítkovice": "Ostrava-město", "Liberec": "Liberec", "Hr. Králové": "Hradec Králové",
@@ -75,11 +78,13 @@ def cesta(geom, fx, fy) -> str:
     return "".join(casti)
 
 
-def trida(x: float) -> int:
-    return 1 + sum(x >= p for p in PRAHY)
+def trida(x: float, prahy: list[float]) -> int:
+    return 1 + sum(x >= p for p in prahy)
 
 
-def mapa(g: gpd.GeoDataFrame, w: int, obrysy: gpd.GeoDataFrame, popis: str) -> str:
+def mapa(g: gpd.GeoDataFrame, w: int, obrysy: gpd.GeoDataFrame, popis: str,
+         sloupec: str = "podil_prumer", prahy: list[float] = PRAHY) -> str:
+    na1000 = sloupec == "na1000"
     x0, y0, x1, y1 = g.total_bounds
     m = w / (x1 - x0)
     h = round((y1 - y0) * m)
@@ -92,10 +97,12 @@ def mapa(g: gpd.GeoDataFrame, w: int, obrysy: gpd.GeoDataFrame, popis: str) -> s
 
     o = []
     for r in g.itertuples():
-        if r.spolehlive is True or r.spolehlive == 1:
-            fill, stav = f"var(--q{trida(r.podil_prumer)})", pct(r.podil_prumer, 2)
+        h1 = getattr(r, sloupec)
+        hodnota = f"{cz(h1, 2)} na 1 000 obyvatel" if na1000 else pct(h1, 2)
+        if r.spolehlive and not (na1000 and r.obyvatel < MIN_OBYVATEL):
+            fill, stav = f"var(--q{trida(h1, prahy)})", hodnota
         elif r.ma_data:
-            fill, stav = "var(--nejiste)", f"{pct(r.podil_prumer, 2)} (nespolehlivé)"
+            fill, stav = "var(--nejiste)", f"{hodnota} (nespolehlivé)"
         else:
             fill, stav = "var(--prazdne)", "bez příjezdů"
         o.append(f'<path d="{cesta(r.geometry, fx, fy)}" fill="{fill}" class=uz '
@@ -119,7 +126,29 @@ def s_podilem(g: gpd.GeoDataFrame, nazev: str) -> gpd.GeoDataFrame:
     g["ma_data"] = g["podil_prumer"].notna()
     g["spolehlive"] = g["spolehlive"].eq(True)
     g["podil_prumer"] = g["podil_prumer"].fillna(0)
+    o = pd.read_csv(ROOT / "data" / "obyvatele.csv")
+    o = o[o["uroven"] == nazev]
+    # okresy mají v ČSÚ jiné kódy než v RÚIAN, názvy se shodují
+    if nazev == "okresy":
+        g = g.merge(o[["nazev", "obyvatel"]], on="nazev", how="left")
+    else:
+        g["kod"] = g["kod"].astype(int)
+        g = g.merge(o.assign(kod=o["kod"].astype(int))[["kod", "obyvatel"]], on="kod", how="left")
+    if g["obyvatel"].isna().any():
+        raise ValueError(f"{nazev}: chybí obyvatelé u {g.loc[g['obyvatel'].isna(), 'nazev'].tolist()}")
+    # typický zápas: průměrný počet rezidentů navíc rozdělený podle průměrných podílů
+    na_zapas = pd.read_csv(DATA / "zapasy_odhad.csv")["rezidenti_navic"].mean()
+    g["na1000"] = g["podil_prumer"] * na_zapas / g["obyvatel"] * 1000
     return g
+
+
+def legenda_1000(prahy: list[float]) -> str:
+    f = [cz(x, 2).rstrip("0").rstrip(",") for x in prahy]
+    pol = [(f"do {f[0]}", "var(--q1)")]
+    pol += [(f"{f[i]} – {f[i + 1]}", f"var(--q{i + 2})") for i in range(4)]
+    pol += [(f"{f[4]} a víc", "var(--q6)"), ("nespolehlivé nebo málo obyvatel", "var(--nejiste)"),
+            ("bez příjezdů", "var(--prazdne)")]
+    return legenda(pol)
 
 
 def legenda_mapy() -> str:
@@ -156,7 +185,30 @@ def karty_map() -> str:
     return (karta("Odkud fanoušci jezdí: Brno po městských částech a obce do 65 km", popis,
                   leg + mapa(g, 1000, obrys, "Mapa podílu podle obcí"), t1, "siroka")
             + karta("Odkud fanoušci jezdí: okresy Česka", popis,
-                    leg + mapa(okr, 1000, okr.iloc[:0], "Mapa podílu podle okresů"), t2, "siroka"))
+                    leg + mapa(okr, 1000, okr.iloc[:0], "Mapa podílu podle okresů"), t2, "siroka")
+            + karta_1000(g, obrys, okr))
+
+
+def karta_1000(g: gpd.GeoDataFrame, obrys: gpd.GeoDataFrame, okr: gpd.GeoDataFrame) -> str:
+    popis = ("Kolik lidí přijelo na typický zápas přímo z domova na 1 000 obyvatel (ČSÚ, MV ČR, "
+             "1. 1. 2026). Jen měřená polovina příchozích, skutečná účast je vyšší. Poloha v síti je "
+             f"hrubá, sousední obce se mohou prolínat; obce pod {MIN_OBYVATEL} obyvatel nehodnotíme.")
+    hod = g[g["spolehlive"] & (g["obyvatel"] >= MIN_OBYVATEL)].nlargest(40, "na1000")
+    hodo = okr[okr["spolehlive"]].nlargest(20, "na1000")
+
+    def tab(d, prvni):
+        return tabulka([prvni, "Obyvatel", "Na 1 000 obyvatel"],
+                       [[r.nazev, cz(r.obyvatel, 0), cz(r.na1000, 2)] for r in d.itertuples()])
+
+    return (karta("Odkud jezdí nejvíc lidí vůči počtu obyvatel: obce a městské části", popis,
+                  legenda_1000(PRAHY_1000_OBCE)
+                  + mapa(g, 1000, obrys, "Mapa na 1 000 obyvatel podle obcí", "na1000", PRAHY_1000_OBCE),
+                  tab(hod, "Území"), "siroka")
+            + karta("Okresy na 1 000 obyvatel", popis,
+                    legenda_1000(PRAHY_1000_OKRESY)
+                    + mapa(okr, 1000, okr.iloc[:0], "Mapa na 1 000 obyvatel podle okresů", "na1000",
+                           PRAHY_1000_OKRESY),
+                    tab(hodo, "Okres"), "siroka"))
 
 
 # ---------- grafy ----------
@@ -436,7 +488,7 @@ table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}th,t
 přímo z domova (asi polovina příchozích); kdo se cestou zastavil, v mapě chybí. Malé hodnoty zkresluje anonymizační šum.</div>
 <div class=dlazdice>@DLAZDICE@</div>
 @TELO@
-<p class=popis>Zdroje: Intiq / O2 (mobilní data), hokej.cz (kalendář a návštěvnost), ČÚZK – RÚIAN (hranice).</p>
+<p class=popis>Zdroje: Intiq / O2 (mobilní data), hokej.cz (kalendář a návštěvnost), ČÚZK – RÚIAN (hranice), ČSÚ a MV ČR (obyvatelstvo).</p>
 </main><div id=tip></div><script>
 const t=document.getElementById('tip');
 document.addEventListener('mousemove',e=>{const el=e.target.closest('[data-tip]');if(!el){t.style.display='none';return}
