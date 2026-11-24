@@ -1,0 +1,93 @@
+datum,zacatek,sezona,faze,kolo,souper,souper_plny_nazev,skore,navstevnost_oficialni,stadion,zapas_id,zdroj
+2024-01-05,18:00,2023/24,základní část,33. kolo,Sparta,HC Sparta Praha,2:3,7700,"Brno, Winning Group Arena",2908827,https://www.hokej.cz/zapas/2908827
+2024-01-10,18:00,2023/24,základní část,47. kolo,Pardubice,HC Dynamo Pardubice,6:7,6445,"Brno, Winning Group Arena",2908821,https://www.hokej.cz/zapas/2908821
+2024-01-12,18:00,2023/24,základní část,35. kolo,Olomouc,HC Olomouc,4:3,6686,"Brno, Winning Group Arena",2908841,https://www.hokej.cz/zapas/2908841
+2024-01-17,18:00,2023/24,základní část,29. kolo,Litvínov,HC VERVA Litvínov,3:1,7412,"Brno, Winning Group Arena",2908791,https://www.hokej.cz/zapas/2908791
+2024-01-19,18:00,2023/24,základní část,37. kolo,Vítkovice,HC VÍTKOVICE RIDERA,7:1,7049,"Brno, Winning Group Arena",2908855,https://www.hokej.cz/zapas/2908855
+2024-01-21,17:00,2023/24,základní část,38. kolo,Liberec,Bílí Tygři Liberec,4:1,7220,"Brno, Winning Group Arena",2908863,https://www.hokej.cz/zapas/2908863
+2024-01-26,18:00,2023/24,základní část,40. kolo,Hr. Králové,Mountfield HK,3:2,7036,"Brno, Winning Group Arena",2908878,https://www.hokej.cz/zapas/2908878
+2024-01-28,17:00,2023/24,základní část,41. kolo,Karlovy Vary,HC Energie Karlovy Vary,5:1,6991,"Brno, Winning Group Arena",2908885,https://www.hokej.cz/zapas/2908885
+2024-02-04,17:00,2023/24,základní část,43. kolo,Ml. Boleslav,BK Mladá Boleslav,2:3,6564,"Brno, Winning Group Arena",2908898,https://www.hokej.cz/zapas/2908898
+2024-02-16,18:00,2023/24,základní část,45. kolo,Kladno,Rytíři Kladno,2:3,7700,"Brno, Winning Group Arena",2908913,https://www.hokej.cz/zapas/2908913
+2024-02-25,17:00,2023/24,základní část,49. kolo,Plzeň,HC Škoda Plzeň,5:1,7039,"Brno, Winning Group Arena",2908934,https://www.hokej.cz/zapas/2908934
+2024-03-03,16:30,2023/24,základní část,52. kolo,Třinec,HC Oceláři Třinec,3:2,7700,"Brno, Winning Group Arena",2908952,https://www.hokej.cz/zapas/2908952
+2024-03-17,17:00,2023/24,play-off,Čtvrtfinále 1. kolo,Litvínov,HC VERVA Litvínov,1:2,7700,"Brno, Winning Group Arena",2913136,https://www.hokej.cz/zapas/2913136
+2024-03-18,17:00,2023/24,play-off,Čtvrtfinále 2. kolo,Litvínov,HC VERVA Litvínov,1:5,7700,"Brno, Winning Group Arena",2913138,https://www.hokej.cz/zapas/2913138
+2024-03-24,17:00,2023/24,play-off,Čtvrtfinále 5. kolo,Litvínov,HC VERVA Litvínov,1:2,7700,"Brno, Winning Group Arena",2913150,https://www.hokej.cz/zapas/2913150
+2024-09-18,18:00,2024/25,základní část,1. kolo,Liberec,Bílí Tygři Liberec,1:2,6947,"Brno, Winning Group Arena",2915097,https://www.hokej.cz/zapas/2915097
+2024-09-27,18:00,2024/25,základní část,5. kolo,Olomouc,HC Olomouc,1:4,6624,"Brno, Winning Group Arena",2915125,https://www.hokej.cz/zapas/2915125
+2024-10-01,18:00,2024/25,základní část,7. kolo,Pardubice,HC Dynamo Pardubice,3:2,6217,"Brno, Winning Group Arena",2915139,https://www.hokej.cz/zapas/2915139
+2024-10-09,18:00,2024/25,základní část,9. kolo,Č. Budějovice,Č. Budějovice,3:0,5551,"Brno, Winning Group Arena",2915154,https://www.hokej.cz/zapas/2915154
+2024-10-11,18:00,2024/25,základní část,10. kolo,Vítkovice,HC VÍTKOVICE RIDERA,5:3,5883,"Brno, Winning Group Arena",2915158,https://www.hokej.cz/zapas/2915158
+2024-10-14,18:00,2024/25,základní část,11. kolo,Ml. Boleslav,BK Mladá Boleslav,4:2,5637,"Brno, Winning Group Arena",2915167,https://www.hokej.cz/zapas/2915167
+2024-10-20,17:00,2024/25,základní část,13. kolo,Sparta,HC Sparta Praha,2:1,7700,"Brno, Winning Group Arena",2915183,https://www.hokej.cz/zapas/2915183
+2024-10-27,17:00,2024/25,základní část,15. kolo,Hr. Králové,Mountfield HK,2:3,7241,"Brno, Winning Group Arena",2915195,https://www.hokej.cz/zapas/2915195
+2024-10-29,18:00,2024/25,základní část,16. kolo,Třinec,HC Oceláři Třinec,3:2,7014,"Brno, Winning Group Arena",2915198,https://www.hokej.cz/zapas/2915198
+2024-11-01,18:00,2024/25,základní část,17. kolo,Kladno,Rytíři Kladno,3:2,7526,"Brno, Winning Group Arena",2915210,https://www.hokej.cz/zapas/2915210
+2024-11-15,18:00,2024/25,základní část,19. kolo,Plzeň,HC Škoda Plzeň,2:3,7023,"Brno, Winning Group Arena",2915224,https://www.hokej.cz/zapas/2915224
+2024-11-20,18:00,2024/25,základní část,21. kolo,Karlovy Vary,HC Energie Karlovy Vary,4:2,6008,"Brno, Winning Group Arena",2915238,https://www.hokej.cz/zapas/2915238
+2024-12-06,18:00,2024/25,základní část,25. kolo,Litvínov,HC VERVA Litvínov,0:3,6046,"Brno, Winning Group Arena",2915267,https://www.hokej.cz/zapas/2915267
+2024-12-20,18:00,2024/25,základní část,27. kolo,Liberec,Bílí Tygři Liberec,4:2,6984,"Brno, Winning Group Arena",2915279,https://www.hokej.cz/zapas/2915279
+2024-12-26,18:00,2024/25,základní část,29. kolo,Třinec,HC Oceláři Třinec,4:2,7361,"Brno, Winning Group Arena",2915295,https://www.hokej.cz/zapas/2915295
+2024-12-30,18:00,2024/25,základní část,31. kolo,Olomouc,HC Olomouc,5:3,7700,"Brno, Winning Group Arena",2915307,https://www.hokej.cz/zapas/2915307
+2025-01-05,17:00,2024/25,základní část,33. kolo,Pardubice,HC Dynamo Pardubice,3:2,6672,"Brno, Winning Group Arena",2915323,https://www.hokej.cz/zapas/2915323
+2025-01-10,18:00,2024/25,základní část,35. kolo,Č. Budějovice,Č. Budějovice,2:3,6653,"Brno, Winning Group Arena",2915335,https://www.hokej.cz/zapas/2915335
+2025-01-16,18:00,2024/25,základní část,37. kolo,Ml. Boleslav,BK Mladá Boleslav,4:0,6120,"Brno, Winning Group Arena",2915348,https://www.hokej.cz/zapas/2915348
+2025-01-24,18:00,2024/25,základní část,39. kolo,Sparta,HC Sparta Praha,1:4,7700,"Brno, Winning Group Arena",2915365,https://www.hokej.cz/zapas/2915365
+2025-02-02,17:00,2024/25,základní část,43. kolo,Kladno,Rytíři Kladno,2:3,7624,"Brno, Winning Group Arena",2915393,https://www.hokej.cz/zapas/2915393
+2025-02-14,18:00,2024/25,základní část,45. kolo,Plzeň,HC Škoda Plzeň,4:3,6475,"Brno, Winning Group Arena",2915406,https://www.hokej.cz/zapas/2915406
+2025-02-19,18:00,2024/25,základní část,41. kolo,Hr. Králové,Mountfield HK,3:0,5792,"Brno, Winning Group Arena",2915378,https://www.hokej.cz/zapas/2915378
+2025-02-21,18:00,2024/25,základní část,47. kolo,Karlovy Vary,HC Energie Karlovy Vary,3:2,6786,"Brno, Winning Group Arena",2915420,https://www.hokej.cz/zapas/2915420
+2025-02-25,18:00,2024/25,základní část,49. kolo,Vítkovice,HC VÍTKOVICE RIDERA,5:1,6639,"Brno, Winning Group Arena",2915434,https://www.hokej.cz/zapas/2915434
+2025-03-02,16:30,2024/25,základní část,51. kolo,Litvínov,HC VERVA Litvínov,4:1,7700,"Brno, Winning Group Arena",2915449,https://www.hokej.cz/zapas/2915449
+2025-03-18,18:00,2024/25,play-off,Čtvrtfinále 1. kolo,Karlovy Vary,HC Energie Karlovy Vary,3:4,7700,"Brno, Winning Group Arena",2921372,https://www.hokej.cz/zapas/2921372
+2025-03-19,17:00,2024/25,play-off,Čtvrtfinále 2. kolo,Karlovy Vary,HC Energie Karlovy Vary,3:2,7700,"Brno, Winning Group Arena",2921374,https://www.hokej.cz/zapas/2921374
+2025-03-25,18:00,2024/25,play-off,Čtvrtfinále 5. kolo,Karlovy Vary,HC Energie Karlovy Vary,5:3,7700,"Brno, Winning Group Arena",2921386,https://www.hokej.cz/zapas/2921386
+2025-04-05,17:00,2024/25,play-off,Semifinále 3. kolo,Sparta,HC Sparta Praha,3:0,7700,"Brno, Winning Group Arena",2921399,https://www.hokej.cz/zapas/2921399
+2025-04-06,17:00,2024/25,play-off,Semifinále 4. kolo,Sparta,HC Sparta Praha,0:1,7700,"Brno, Winning Group Arena",2921400,https://www.hokej.cz/zapas/2921400
+2025-04-11,18:00,2024/25,play-off,Semifinále 6. kolo,Sparta,HC Sparta Praha,0:3,7700,"Brno, Winning Group Arena",2921405,https://www.hokej.cz/zapas/2921405
+2025-04-21,19:00,2024/25,play-off,Finále 3. kolo,Pardubice,HC Dynamo Pardubice,1:4,7700,"Brno, Winning Group Arena",2921411,https://www.hokej.cz/zapas/2921411
+2025-04-22,18:00,2024/25,play-off,Finále 4. kolo,Pardubice,HC Dynamo Pardubice,7:4,7700,"Brno, Winning Group Arena",2921412,https://www.hokej.cz/zapas/2921412
+2025-04-27,17:00,2024/25,play-off,Finále 6. kolo,Pardubice,HC Dynamo Pardubice,1:5,7700,"Brno, Winning Group Arena",2921414,https://www.hokej.cz/zapas/2921414
+2025-08-29,19:00,2025/26,Liga mistrů,1. kolo,Brynäs,Brynäs IF,4:1,4298,"Brno, Winning Group Arena",,https://www.hc-kometa.cz/zapas.asp?id=Uspesny-start-do-Ligy-mistru-Kometa-si-vyslapla-na-svedske-Brynas-9463
+2025-08-31,16:00,2025/26,Liga mistrů,2. kolo,Odense,Odense Bulldogs,5:2,3953,"Brno, Winning Group Arena",,https://www.hc-kometa.cz/zapas.asp?id=Kometa-si-poradila-i-s-danskym-Odense-a-v-Lize-mistru-ma-plny-pocet-bodu-9464
+2025-09-10,18:00,2025/26,základní část,1. kolo,Litvínov,HC VERVA Litvínov,4:2,6712,"Brno, Winning Group Arena",2921769,https://www.hokej.cz/zapas/2921769
+2025-09-14,16:30,2025/26,základní část,3. kolo,Sparta,HC Sparta Praha,2:0,7700,"Brno, Winning Group Arena",2921779,https://www.hokej.cz/zapas/2921779
+2025-09-16,18:00,2025/26,základní část,4. kolo,Vítkovice,HC VÍTKOVICE RIDERA,5:2,6133,"Brno, Winning Group Arena",2921784,https://www.hokej.cz/zapas/2921784
+2025-09-19,18:00,2025/26,základní část,5. kolo,Liberec,Bílí Tygři Liberec,4:5,7054,"Brno, Winning Group Arena",2921797,https://www.hokej.cz/zapas/2921797
+2025-09-23,18:00,2025/26,základní část,7. kolo,Plzeň,HC Škoda Plzeň,4:2,6119,"Brno, Winning Group Arena",2921808,https://www.hokej.cz/zapas/2921808
+2025-09-28,17:00,2025/26,základní část,9. kolo,Pardubice,HC Dynamo Pardubice,1:2,7700,"Brno, Winning Group Arena",2921823,https://www.hokej.cz/zapas/2921823
+2025-10-03,18:00,2025/26,základní část,11. kolo,Kladno,Rytíři Kladno,3:4,6317,"Brno, Winning Group Arena",2921834,https://www.hokej.cz/zapas/2921834
+2025-10-05,17:00,2025/26,základní část,12. kolo,Karlovy Vary,HC Energie Karlovy Vary,3:1,5852,"Brno, Winning Group Arena",2921846,https://www.hokej.cz/zapas/2921846
+2025-10-08,18:00,2025/26,Liga mistrů,5. kolo,Ilves,Ilves Tampere,0:5,4083,"Brno, Winning Group Arena",,https://www.hc-kometa.cz/zapas.asp?id=Tampere-bere-tri-body-z-Brna-a-drzi-se-tak-na-prvni-pricce-tabulky-CHL-9467
+2025-10-17,18:00,2025/26,základní část,15. kolo,Ml. Boleslav,BK Mladá Boleslav,1:4,6828,"Brno, Winning Group Arena",2921867,https://www.hokej.cz/zapas/2921867
+2025-10-24,18:00,2025/26,základní část,17. kolo,Vítkovice,HC VÍTKOVICE RIDERA,4:1,7169,"Brno, Winning Group Arena",2921875,https://www.hokej.cz/zapas/2921875
+2025-10-28,17:00,2025/26,základní část,19. kolo,Hr. Králové,Mountfield HK,1:2,7281,"Brno, Winning Group Arena",2921893,https://www.hokej.cz/zapas/2921893
+2025-11-02,17:00,2025/26,základní část,21. kolo,Č. Budějovice,Č. Budějovice,4:3,6542,"Brno, Winning Group Arena",2921908,https://www.hokej.cz/zapas/2921908
+2025-11-16,17:00,2025/26,základní část,23. kolo,Třinec,HC Oceláři Třinec,4:3,7700,"Brno, Winning Group Arena",2921923,https://www.hokej.cz/zapas/2921923
+2025-11-18,18:00,2025/26,Liga mistrů,Osmifinále 2. zápas,Luleå,Luleå Hockey,5:3,2142,"Brno, Winning Group Arena",,https://www.hc-kometa.cz/zapas.asp?id=Domaci-vitezstvi-Komete-nestacilo-dale-postupuje-Lule-229-9932
+2025-11-25,18:00,2025/26,základní část,26. kolo,Olomouc,HC Olomouc,1:2,6213,"Brno, Winning Group Arena",2921941,https://www.hokej.cz/zapas/2921941
+2025-12-05,18:00,2025/26,základní část,29. kolo,Sparta,HC Sparta Praha,3:1,7700,"Brno, Winning Group Arena",2921961,https://www.hokej.cz/zapas/2921961
+2025-12-19,18:00,2025/26,základní část,31. kolo,Liberec,Bílí Tygři Liberec,3:1,7376,"Brno, Winning Group Arena",2921979,https://www.hokej.cz/zapas/2921979
+2025-12-23,18:00,2025/26,základní část,33. kolo,Plzeň,HC Škoda Plzeň,3:2,7324,"Brno, Winning Group Arena",2921990,https://www.hokej.cz/zapas/2921990
+2025-12-28,17:00,2025/26,základní část,35. kolo,Pardubice,HC Dynamo Pardubice,1:4,7700,"Brno, Winning Group Arena",2922005,https://www.hokej.cz/zapas/2922005
+2026-01-02,18:00,2025/26,základní část,37. kolo,Kladno,Rytíři Kladno,2:4,7493,"Brno, Winning Group Arena",2922016,https://www.hokej.cz/zapas/2922016
+2026-01-04,17:00,2025/26,základní část,38. kolo,Karlovy Vary,HC Energie Karlovy Vary,2:3,6041,"Brno, Winning Group Arena",2922028,https://www.hokej.cz/zapas/2922028
+2026-01-09,18:00,2025/26,základní část,40. kolo,Litvínov,HC VERVA Litvínov,7:2,6239,"Brno, Winning Group Arena",2922042,https://www.hokej.cz/zapas/2922042
+2026-01-11,17:00,2025/26,základní část,41. kolo,Ml. Boleslav,BK Mladá Boleslav,3:2,6157,"Brno, Winning Group Arena",2922049,https://www.hokej.cz/zapas/2922049
+2026-01-25,17:00,2025/26,základní část,45. kolo,Hr. Králové,Mountfield HK,4:3,7418,"Brno, Winning Group Arena",2922075,https://www.hokej.cz/zapas/2922075
+2026-01-30,18:00,2025/26,základní část,47. kolo,Č. Budějovice,Č. Budějovice,4:3,7433,"Brno, Winning Group Arena",2922090,https://www.hokej.cz/zapas/2922090
+2026-02-27,18:00,2025/26,základní část,49. kolo,Třinec,HC Oceláři Třinec,5:1,7700,"Brno, Winning Group Arena",2922105,https://www.hokej.cz/zapas/2922105
+2026-03-06,17:30,2025/26,základní část,52. kolo,Olomouc,HC Olomouc,5:4,7700,"Brno, Winning Group Arena",2922123,https://www.hokej.cz/zapas/2922123
+2026-03-09,18:00,2025/26,předkolo,Předkolo 1. kolo,Č. Budějovice,Č. Budějovice,2:1,7126,"Brno, Winning Group Arena",2927776,https://www.hokej.cz/zapas/2927776
+2026-03-10,18:00,2025/26,předkolo,Předkolo 2. kolo,Č. Budějovice,Č. Budějovice,1:2,7381,"Brno, Winning Group Arena",2927780,https://www.hokej.cz/zapas/2927780
+2026-03-22,17:00,2025/26,play-off,Čtvrtfinále 3. kolo,Pardubice,HC Dynamo Pardubice,2:4,7700,"Brno, Winning Group Arena",2927801,https://www.hokej.cz/zapas/2927801
+2026-03-23,17:00,2025/26,play-off,Čtvrtfinále 4. kolo,Pardubice,HC Dynamo Pardubice,0:1,7700,"Brno, Winning Group Arena",2927803,https://www.hokej.cz/zapas/2927803
+2026-09-20,17:00,2026/27,základní část,3. kolo,Hr. Králové,Mountfield HK,3:1,7003,"Brno, Winning Group Arena",2928269,https://www.hokej.cz/zapas/2928269
+2026-09-27,17:00,2026/27,základní část,5. kolo,Pardubice,HC Dynamo Pardubice,3:5,7657,"Brno, Winning Group Arena",2928283,https://www.hokej.cz/zapas/2928283
+2026-10-02,18:00,2026/27,základní část,7. kolo,Ml. Boleslav,BK Mladá Boleslav,3:2,7319,"Brno, Winning Group Arena",2928303,https://www.hokej.cz/zapas/2928303
+2026-10-11,17:00,2026/27,základní část,10. kolo,Plzeň,HC Škoda Plzeň,1:2,7412,"Brno, Winning Group Arena",2928324,https://www.hokej.cz/zapas/2928324
+2026-10-18,17:00,2026/27,základní část,12. kolo,Liberec,Bílí Tygři Liberec,3:2,7125,"Brno, Winning Group Arena",2928337,https://www.hokej.cz/zapas/2928337
+2026-10-28,18:00,2026/27,základní část,15. kolo,Třinec,HC Oceláři Třinec,3:4,7700,"Brno, Winning Group Arena",2928357,https://www.hokej.cz/zapas/2928357
+2026-11-01,17:00,2026/27,základní část,17. kolo,Olomouc,HC Olomouc,3:2,7263,"Brno, Winning Group Arena",2928372,https://www.hokej.cz/zapas/2928372
+2026-11-22,17:00,2026/27,základní část,21. kolo,Č. Budějovice,Č. Budějovice,2:4,7048,"Brno, Winning Group Arena",2928401,https://www.hokej.cz/zapas/2928401
