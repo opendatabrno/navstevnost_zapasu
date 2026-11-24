@@ -4,9 +4,6 @@ data/raw/*
 # Agregace z Intiq – totéž
 data/processed/*
 !data/processed/.gitkeep
-# Vygenerovaný web – zveřejňuje se ve větvi gh-pages
-web/*
-!web/.gitkeep
 .env
 __pycache__/
 .ipynb_checkpoints/

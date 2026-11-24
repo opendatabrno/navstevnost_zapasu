@@ -1,7 +1,7 @@
 """Vytvoří z výsledků zpracuj_intiq.py přehled s mapou a grafy.
 
-Výstup:  web/index.html (zveřejňuje se ve větvi gh-pages) a kopie
-         data/processed/prehled.html; ve větvi s kódem obojí negitováno
+Výstup:  docs/index.html (zveřejňuje se přes GitHub Pages) a kopie
+         data/processed/prehled.html (negitováno)
 Použití: python scripts/vytvor_prehled.py
 """
 
@@ -509,7 +509,7 @@ def main() -> None:
         + graf_soupere(z, okr)
         + grafy_akci(z)
         + "</div>")
-    vystup = ROOT / "web" / "index.html"
+    vystup = ROOT / "docs" / "index.html"
     stranka = SABLONA.replace("@DLAZDICE@", dlazdice).replace("@TELO@", telo)
     for soubor in (vystup, DATA / "prehled.html"):
         soubor.write_text(stranka, encoding="utf-8")
