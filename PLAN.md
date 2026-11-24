@@ -14,7 +14,7 @@ Zdroj: uživatelská příručka INTIQ IQ Modules (SW 4.8.0) a prohlížení mod
 | **Původ** | Protější hexagon cesty. Oblast B je volitelná; bez ní jsou vidět cesty ze všech oblastí, i mimo Brno. |
 | **Čas** | Od 1. 1. 2024, aktualizace měsíčně, zdroj po 15 minutách. Telefon se ale síti hlásí typicky každých 30 minut → 15minutový krok je jemnější než skutečná přesnost. |
 | **Anonymizace** | Příručka nezmiňuje skrývání malých hodnot, ale differential privacy (šum); zkreslení hlavně u hodnot do 10. |
-| **Export** | Z UI, vyžaduje oprávnění, vždy 15minutová data; velké exporty dělit na kratší období. CSV (čárka, UTF-8), řádek = zdrojový hexagon × cílový hexagon × 15 min, sloupce pro 4 kategorie; nulové řádky chybí. **Časy jsou v UTC** → převést na Europe/Prague. Původ je hexagon H3 rozlišení 9, obec se doplní prostorovým spojením s RÚIAN. V panelu Claude je nutný klik člověka (otevírá novou kartu). |
+| **Export** | Z UI, vyžaduje oprávnění, vždy 15minutová data; velké exporty dělit na kratší období. CSV (čárka, UTF-8), řádek = zdrojový hexagon × cílový hexagon × 15 min, sloupce pro 4 kategorie; nulové řádky chybí. **Časy jsou v UTC** → převést na Europe/Prague (výjimka viz hodinový posun níže). Původ je hexagon H3 rozlišení 9, obec se doplní prostorovým spojením s RÚIAN. Stahování po čtvrtletích je spolehlivé (Přijíždějící i Přítomné). |
 | **Licence** | Příručka ani veřejné zdroje ji neuvádějí → **otevřené**, před publikací dořešit. |
 
 **Pilot** – dva domácí zápasy s rozdílnou návštěvou: Luleå 18. 11. 2025 (2 142 diváků) a finále s Pardubicemi 27. 4. 2025 (7 700). Přítomnost v okně zápasu na velikost návštěvy zřetelně reaguje; baseline zatím neodečtena.
@@ -27,7 +27,8 @@ Zdroj: uživatelská příručka INTIQ IQ Modules (SW 4.8.0) a prohlížení mod
 
 **Otevřené**
 
-- V březnu 2024 jsou Přijíždějící a Vyjíždějící posunuté asi o hodinu vůči Přítomným; v dubnu a listopadu 2025 ne. Najít hranici posunu, než se budou sady spojovat.
+- **Hodinový posun:** Přijíždějící mají před 1. 3. 2025 v exportu místní čas označený jako UTC → před tímto datem značku neposouvat, od něj převádět z UTC. Přítomné jsou v UTC celou dobu. Ověřeno na zápasech; přesný den hranice leží mezi 25. 2. a 2. 3. 2025 (podle zápasů). Velikost posunu odpovídá zimnímu a letnímu času (+1 h / +2 h); samotné noci změny času jsou v datech nejasné, zápasů se ale netýkají.
+- **Úroveň odhadu není v čase stejná:** poměr k oficiální návštěvě je v lednu–březnu 2024 vyšší než později → absolutní počty mezi sezónami neporovnávat, používat podíly nebo přepočet na oficiální návštěvu. Příčina neznámá.
 - Extrapolaci na celou populaci příručka popisuje jen u dopravy; u obyvatelstva ji ověřit.
 - Licence (viz tabulka).
 - Většina hodnot v exportu je menší než 10, tedy v pásmu, kde šum zkresluje nejvíc → ověřit, jak se to projeví po sečtení přes více zápasů.
