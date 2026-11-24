@@ -1,48 +1,44 @@
-# Návštěvnost zápasů – HC Kometa Brno
+# Odkud jezdí fanoušci HC Kometa Brno
 
-Analýza návštěvnosti domácích zápasů HC Kometa Brno ve Winning Group Aréně na základě dat o pohybu obyvatel z platformy [Intiq](https://auth.iq.intiq.app/) (data z mobilní sítě).
+Web o tom, odkud lidé jezdí na domácí zápasy HC Kometa Brno ve Winning Group Aréně. Vychází z dat
+o pohybu obyvatel z mobilní sítě (Intiq / O2) od ledna 2024.
 
-**Cíl:** zjistit, odkud fanoušci na zápasy dojíždějí, jak se to liší podle soupeře, fáze sezóny a času, a jak se to vyvíjí od ledna 2024, odkdy jsou data dostupná (v 15minutovém rozlišení).
+- **Web:** https://opendatabrno.github.io/navstevnost_zapasu/
+- **Kalendář zápasů:** [data/zapasy.csv](data/zapasy.csv)
 
-Web: https://opendatabrno.github.io/navstevnost_zapasu/
+## Co na webu najdete
 
-Podrobný plán viz [PLAN.md](PLAN.md).
+| Část | Co ukazuje |
+|---|---|
+| Mapy původu | podíl fanoušků z městských částí Brna, obcí do 65 km a okresů Česka |
+| Mapy na 1 000 obyvatel | odkud jezdí nejvíc lidí vůči velikosti území |
+| Vzdálenost | jak daleko lidé na hokej jezdí |
+| Čas příjezdu | kdy lidé před zápasem přijíždějí |
+| Typ zápasu a sezóna | základní část, play-off, Liga mistrů, víkend, všední den, vývoj po sezónách |
+| Soupeři a hosté | podíl lidí z jiných krajů a příjezdy z okresu soupeře |
+| Odhad a oficiální návštěva | srovnání odhadu s oficiální návštěvností |
+| Hokej a jiné akce | srovnání s koncerty a dalšími akcemi ve stejné hale |
 
-## Struktura
+## Data
 
-```
-data/raw/        – surové exporty z Intiq a stažené hranice (negitované, viz licence)
-data/processed/  – agregace po zápasech a územích (negitované, viz licence)
-data/zapasy.csv  – kalendář domácích zápasů
-data/zapasy_liga_mistru.csv – ručně doplněné zápasy Ligy mistrů
-data/akce.csv    – doložené jiné akce v hale (koncerty, MMA, univerzitní hokej)
-data/obyvatele.csv – počty obyvatel (ČSÚ, MV ČR)
-scripts/         – stahování, zpracování a vytvoření webu
-notebooks/       – analýzy (zatím prázdné)
-web/             – vygenerovaná statická stránka (na Pages ji nasazuje .github/workflows/pages.yml)
-```
+| Soubor | Obsah | Zdroj |
+|---|---|---|
+| [`data/zapasy.csv`](data/zapasy.csv) | odehrané domácí zápasy ve Winning Group Aréně od ledna 2024: datum, začátek, soupeř, fáze, skóre, oficiální návštěva | hokej.cz, hc-kometa.cz |
+| [`data/zapasy_liga_mistru.csv`](data/zapasy_liga_mistru.csv) | zápasy Ligy mistrů, součást kalendáře | hc-kometa.cz |
+| [`data/akce.csv`](data/akce.csv) | doložené jiné akce v hale: koncerty, MMA, univerzitní hokej | odkaz u každé akce |
+| [`data/obyvatele.csv`](data/obyvatele.csv) | počty obyvatel obcí, okresů a městských částí Brna | ČSÚ, MV ČR |
 
-## Postup
+Surová data z mobilní sítě v repozitáři nejsou, na webu jsou jen souhrnné výsledky.
 
-```
-python scripts/stahni_zapasy.py      # kalendář zápasů (hokej.cz)
-python scripts/stahni_hranice.py     # hranice území (ČÚZK – RÚIAN)
-python scripts/stahni_obyvatele.py   # počty obyvatel
-python scripts/zpracuj_intiq.py      # potřebuje exporty z Intiq v data/raw/intiq/
-python scripts/vytvor_prehled.py     # vytvoří web/index.html
-python -m http.server 8123 --bind 127.0.0.1 --directory web
-```
+## Jak výsledky číst
 
-Web pak běží na vlastním počítači na adrese http://127.0.0.1:8123/. Potřebné balíčky: pandas, geopandas, h3, openpyxl, tzdata.
+- Jde o odhad z dat jednoho operátora, ne o sčítání diváků.
+- Počítá se rozdíl proti běžným dnům bez zápasu a bez jiné akce v hale.
+- Bydliště je známé jen u lidí, kteří přijeli přímo z domova. Kdo se cestou zastavil, v mapách chybí.
+- Malé hodnoty zkresluje anonymizační šum, u území s málo daty se proto hodnota neuvádí.
+- Úroveň odhadu se v čase mění, mezi sezónami se proto porovnávají podíly, ne počty.
 
-## Stav
+## Licence
 
-- [x] Fáze 0 – průzkum platformy Intiq
-- [x] Fáze 1 – kalendář zápasů a doložené jiné akce v hale
-- [x] Fáze 2 – metodika: rozdíl proti běžným dnům, porovnání s oficiální návštěvností
-- [x] Fáze 3 – mapy původu, vzdálenosti, soupeři, typ zápasu, sezóny, profil příjezdů, hokej a jiné akce
-- [ ] Fáze 3 – profil odjezdů, podklad k debatě o nové hale
-- [x] Fáze 4 – statický web (GitHub Actions)
-- [ ] Open data (CSV) – čeká na vyjasnění licence dat Intiq
-
-Surové exporty a podrobné agregace z Intiq v repozitáři nejsou, zveřejněné jsou jen souhrnné výsledky na webu.
+Kód: MIT (viz [LICENSE](LICENSE)). Hranice: RÚIAN, © ČÚZK, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/deed.cs).
+Ostatní data: podle zdrojů.
