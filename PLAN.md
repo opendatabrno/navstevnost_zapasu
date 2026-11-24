@@ -2,16 +2,34 @@
 
 ## Fáze 0 – Průzkum platformy Intiq
 
-Po přihlášení zjistit:
+Zdroj: uživatelská příručka INTIQ IQ Modules (SW 4.8.0) a prohlížení modulu Obyvatelstvo. Konkrétní hodnoty z Intiq sem nepatří, dokud není jasná licence.
 
-- **Prostorová jednotka** – lze vybrat přímo areál haly (polygon / čtverec mřížky / ZSJ), nebo jen větší území? Areál sousedí s výstavištěm, Mendlovým náměstím a obytnou zástavbou → riziko kontaminace.
-- **Kategorie osob** – rezidenti / dojíždějící / návštěvníci / cizinci. Jak přesně je definován „dojíždějící“?
-- **Původ** – granularita (obec / ORP / okres / kraj / stát), anonymizační prahy (od kolika osob se hodnota zobrazí).
-- **Čas** – data jsou dostupná od 1. 1. 2024; lze volit rozlišení 15 minut → exportovat v nejjemnějším rozlišení zdroje, agregovat až při analýze. Ověřit, zda 15minutový krok nezvyšuje podíl hodnot skrytých anonymizací (hlavně u původu).
-- **Export** – CSV/XLSX, API, nebo jen grafy v UI? → rozhoduje, zda stačí ruční export, nebo je potřeba automatizace (Playwright).
-- **Licence** – smíme agregované výstupy publikovat jako open data?
+| otázka | zjištění |
+|---|---|
+| **Prostorová jednotka** | Hexagony H3, nejjemněji rozlišení 9. Hala leží v `891e0695123ffff`, ten ale zahrnuje i okolní zástavbu (Křídlovická, Nové sady) → bez baseline nelze. |
+| **Rezident × návštěvník** | Rezident = v kalendářním měsíci tráví v hexagonu nejvíc času v noci (každý má právě jeden). Návštěvník = v hexagonu je, ale rezidentem není. |
+| **Přítomné** | Počet osob; delší interval je průměr 15minutových hodnot. |
+| **Přijíždějící** | Počet cest osob, které v hexagonu stráví alespoň 15 min; delší interval je součet, opakované cesty se počítají. „Rezidenti“ přijeli z hexagonu, kde bydlí; „návštěvníci“ odjinud. „Pravidelní“ = alespoň 12× měsíčně. |
+| **Vyjíždějící** | Počet cest zahájených v hexagonu. Definice kategorií je v příručce nejednoznačná a naměřené počty „rezidentů“ výrazně převyšují počet lidí, kteří v hexagonu bydlí → **pro původ fanoušků nepoužívat**, jen orientačně pro profil odjezdů. |
+| **Původ** | Protější hexagon cesty. Oblast B je volitelná; bez ní jsou vidět cesty ze všech oblastí, i mimo Brno. |
+| **Čas** | Od 1. 1. 2024, aktualizace měsíčně, zdroj po 15 minutách. Telefon se ale síti hlásí typicky každých 30 minut → 15minutový krok je jemnější než skutečná přesnost. |
+| **Anonymizace** | Příručka nezmiňuje skrývání malých hodnot, ale differential privacy (šum); zkreslení hlavně u hodnot do 10. |
+| **Export** | Z UI, vyžaduje oprávnění, vždy 15minutová data; velké exporty dělit na kratší období. Formát zatím neověřen (zkušební export nestažen). |
+| **Licence** | Příručka ani veřejné zdroje ji neuvádějí → **otevřené**, před publikací dořešit. |
 
-👉 Pilot: jeden domácí zápas – ověřit, jak data vypadají, než se půjde do všech sezón.
+**Pilot** – dva domácí zápasy s rozdílnou návštěvou: Luleå 18. 11. 2025 (2 142 diváků) a finále s Pardubicemi 27. 4. 2025 (7 700). Přítomnost v okně zápasu na velikost návštěvy zřetelně reaguje; baseline zatím neodečtena.
+
+**Z toho plyne**
+
+- Velikost návštěvy odhadovat z **Přítomných** (návštěvníci).
+- Původ odhadovat z **Přijíždějících, kategorie rezidenti** – jen u nich je původ zároveň bydliště. U návštěvníků je to jen předchozí zastávka (práce, hospoda, zastávka MHD). Zda jsou ti, kdo jedou přímo z domova, reprezentativní pro všechny, je potřeba ověřit.
+- Původ kvůli šumu sčítat přes celé okno a přes více zápasů a agregovat do větších územních celků; jednotlivé 15minutové hodnoty pro malé hexagony nevykládat.
+
+**Otevřené**
+
+- V březnu 2024 jsou Přijíždějící a Vyjíždějící posunuté asi o hodinu vůči Přítomným; v dubnu a listopadu 2025 ne. Najít hranici posunu, než se budou sady spojovat.
+- Extrapolaci na celou populaci příručka popisuje jen u dopravy; u obyvatelstva ji ověřit.
+- Formát exportu a licence (viz tabulka).
 
 ## Fáze 1 – Kalendář zápasů
 
@@ -31,7 +49,7 @@ Doplňkově ostatní akce v hale (koncerty apod.) jako kontrolní skupina.
 
 ## Fáze 2 – Metodika
 
-- **Uplift nad baseline:** přítomnost v okně zápasu (cca −2 h až +1 h od buly) po 15 minutách minus průměr stejného dne v týdnu a stejného 15minutového intervalu v týdnech bez akce. Tím se odfiltrují místní rezidenti a pracující.
+- **Uplift nad baseline:** přítomnost v okně zápasu (cca −3 h až +5 h od buly, aby zahrnulo příjezdy i odjezdy) po 15 minutách minus průměr stejného dne v týdnu a stejného 15minutového intervalu v týdnech bez akce. Tím se odfiltrují místní rezidenti a pracující.
 - **Validace:** porovnání odhadu s oficiální návštěvností (kapacita haly cca 7 700).
 
 ## Fáze 3 – Výstupy
@@ -53,7 +71,8 @@ Doplňkově ostatní akce v hale (koncerty apod.) jako kontrolní skupina.
 
 ## Rizika a omezení
 
-- Data jednoho operátora extrapolovaná na populaci – nutno uvádět u výsledků.
-- Anonymizační prahy skryjí malé obce → agregovat spíš po ORP/okresech.
+- Data jednoho operátora (O2); měří se telefony, ne osoby, a chybí telefony přihlášené do sítě jiného operátora. Nutno uvádět u výsledků.
+- Zahrnuta jsou jen data se souhlasem uživatele; lokalizace podle pokrytí signálem je méně přesná než GPS.
+- Anonymizační šum zkresluje malé hodnoty → agregovat spíš po ORP/okresech.
 - Překryv areálu s okolím → nutná baseline.
 - Licence může omezit publikaci.
