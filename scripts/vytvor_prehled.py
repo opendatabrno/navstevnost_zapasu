@@ -292,7 +292,8 @@ def graf_profil() -> str:
                          [[f"{k:+d} až {k + 15:+d}", pct(v)] for k, v in pod.items()]))
 
 
-def graf_body(nadpis: str, popis: str, skupiny: list[tuple[str, pd.Series]], osa: str, sirka_stitku: int = 130) -> str:
+def graf_body(nadpis: str, popis: str, skupiny: list[tuple[str, pd.Series]], osa: str, sirka_stitku: int = 130,
+              jednotka: str = "Zápasů") -> str:
     """Vodorovné tečky s 95% intervalem: (popisek, hodnoty po zápasech)."""
     st = [(n, len(x), *prumer_ci(x)) for n, x in skupiny]
     konec = max(a + (0 if np.isnan(c) else c) for _, _, a, c in st)
@@ -318,11 +319,72 @@ def graf_body(nadpis: str, popis: str, skupiny: list[tuple[str, pd.Series]], osa
             o += f'<line x1="{fx(max(a - c, 0)):.1f}" x2="{fx(a + c):.1f}" y1="{y:.1f}" y2="{y:.1f}" class=inter />'
         o += (f'<circle cx="{fx(a):.1f}" cy="{y:.1f}" r="5" class=bod fill="var(--s1)"/>'
               f'<rect x="{x0}" y="{y - rh / 2:.1f}" width="{w - x0}" height="{rh}" fill="transparent" '
-              f'data-tip="{esc(n)}, zápasů: {pocet}|{pct(a)}{rozsah}"/>')
+              f'data-tip="{esc(n)}, {jednotka.lower()}: {pocet}|{pct(a)}{rozsah}"/>')
     o += f'<text x="{(w + x0) / 2}" y="{dole + 36}" class=osa text-anchor=middle>{esc(osa)}</text>'
     return karta(nadpis, popis, svg(w, h, o, nadpis),
-                 tabulka(["Skupina", "Zápasů", "Průměr", "± 95 %"],
+                 tabulka(["Skupina", jednotka, "Průměr", "± 95 %"],
                          [[n, p, pct(a), "–" if np.isnan(c) else pct(c)] for n, p, a, c in st]))
+
+
+def skupina_akce(typ) -> str:
+    if typ == "univerzitní hokej":
+        return "Univerzitní hokej"
+    return {"koncert": "Koncerty", "MMA": "MMA (OKTAGON)"}.get(typ, "Neurčené akce")
+
+
+def grafy_akci(z: pd.DataFrame) -> str:
+    """Kontrolní skupina: zápasy Komety proti jiným akcím ve stejné hale."""
+    ak = pd.read_csv(DATA / "akce_odhad.csv")
+    ak["sk"] = ak["typ"].map(skupina_akce)
+    okr = pd.read_csv(DATA / "akce_okresy.csv")
+    k = okr.pivot_table(index="datum", columns="kraje", values="navic", aggfunc="sum").fillna(0)
+    ak["mimo_jmk"] = (1 - k["Jihomoravský kraj"] / k.sum(axis=1)).reindex(ak["datum"]).to_numpy()
+    jine = ak[ak["sk"] != "Univerzitní hokej"]  # univerzitní derby je také hokej, ale bez Komety
+    sk = [("Zápasy Komety", z["mimo_jmk"]), ("Všechny jiné akce", jine["mimo_jmk"])] + [
+        (n, ak.loc[ak["sk"] == n, "mimo_jmk"])
+        for n in ("Koncerty", "MMA (OKTAGON)", "Neurčené akce", "Univerzitní hokej")]
+    body = graf_body(
+        "Hokej a jiné akce: kolik lidí je z jiných krajů",
+        "Podíl rezidentů z jiných krajů, průměr akcí a 95% interval. Jiné akce jsou určené z dat "
+        "(hodně lidí v hale ve dni bez zápasu), druh je doložený jen u části. „Všechny jiné akce“ "
+        "jsou bez univerzitního hokeje. U 2–3 akcí je interval jen orientační.",
+        sk, "podíl z jiných krajů", 170, "Akcí")
+
+    poradi = ["(-0.001, 1.0]", "(1.0, 3.0]", "(3.0, 8.0]", "(8.0, 20.0]", "(20.0, 50.0]",
+              "(50.0, 100.0]", "(100.0, 1000.0]"]
+    nazvy = ["do 1 km", "1–3", "3–8", "8–20", "20–50", "50–100", "nad 100"]
+    pod = {}
+    for jm, soubor, dny in (("Zápasy Komety", "zapasy", None), ("Jiné akce", "akce", set(jine["datum"]))):
+        d = pd.read_csv(DATA / f"{soubor}_vzdalenost.csv")
+        if dny is not None:
+            d = d[d["datum"].isin(dny)]
+        m = d.pivot(index="datum", columns="pasmo_km", values="navic").fillna(0)[poradi]
+        pod[jm] = m.div(m.sum(axis=1), axis=0).mean()
+    w, h, x0, y0, y1, mx = 520, 300, 46, 20, 250, 0.4
+
+    def fy(v):
+        return y1 - v / mx * (y1 - y0)
+
+    o = osa_y([0, .1, .2, .3, .4], fy, x0, w - 6, lambda q: pct(q, 0))
+    krok = (w - 6 - x0) / len(poradi)
+    for i, pasmo in enumerate(poradi):
+        for j, (jm, barva) in enumerate((("Zápasy Komety", "--s1"), ("Jiné akce", "--s3"))):
+            v = max(pod[jm][pasmo], 0)
+            x, t = x0 + i * krok + krok / 2 - 21 + j * 22, fy(v)
+            rr = min(4, y1 - t)
+            o += (f'<path d="M{x:.1f},{y1}V{t + rr:.1f}q0,-{rr:.1f} {rr:.1f},-{rr:.1f}h{20 - 2 * rr:.1f}'
+                  f'q{rr:.1f},0 {rr:.1f},{rr:.1f}V{y1}Z" fill="var({barva})" '
+                  f'data-tip="{nazvy[i]} – {jm}|{pct(v)}"/>')
+        o += f'<text x="{x0 + (i + .5) * krok:.1f}" y="{y1 + 18}" class=osa text-anchor=middle>{nazvy[i]}</text>'
+    o += f'<text x="{(w + x0) / 2}" y="{y1 + 38}" class=osa text-anchor=middle>vzdálenost od haly (km)</text>'
+    vzd = karta(
+        "Hokej a jiné akce: jak daleko lidé jezdí",
+        "Podíl rezidentů podle vzdálenosti bydliště, průměr akcí. Jiné akce bez univerzitního hokeje.",
+        legenda([("Zápasy Komety", "var(--s1)"), ("Jiné akce", "var(--s3)")])
+        + svg(w, h, o, "Sloupcový graf vzdáleností pro hokej a jiné akce"),
+        tabulka(["Pásmo (km)", "Zápasy Komety", "Jiné akce"],
+                [[n, pct(pod["Zápasy Komety"][q]), pct(pod["Jiné akce"][q])] for n, q in zip(nazvy, poradi)]))
+    return body + vzd
 
 
 def graf_soupere(z: pd.DataFrame, okr: pd.DataFrame) -> str:
@@ -444,6 +506,7 @@ def main() -> None:
                     "podíl z Brna", 110)
         + graf_body("Z jiných krajů podle soupeře", popis_mimo, soup, "podíl z jiných krajů", 140)
         + graf_soupere(z, okr)
+        + grafy_akci(z)
         + "</div>")
     vystup = DATA / "prehled.html"
     vystup.write_text(SABLONA.replace("@DLAZDICE@", dlazdice).replace("@TELO@", telo), encoding="utf-8")

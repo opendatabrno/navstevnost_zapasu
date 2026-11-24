@@ -2,7 +2,8 @@
 
 Vstup:   data/raw/intiq/*.csv, data/raw/ruian/*.geojson, data/zapasy.csv
 Výstup:  data/processed/zapasy_odhad.csv, puvod_<uroven>.csv, zapasy_okresy.csv,
-         zapasy_vzdalenost.csv, profil_prijezdu.csv
+         zapasy_vzdalenost.csv, profil_prijezdu.csv, akce_odhad.csv, akce_okresy.csv,
+         akce_vzdalenost.csv (kontrolní skupina: jiné akce v hale, určené z dat)
          (negitováno – výsledky nezveřejňovat, dokud není jasná licence)
 Použití: python scripts/zpracuj_intiq.py
 
@@ -23,6 +24,8 @@ VYSTUP = ROOT / "data" / "processed"
 
 # Před tímto okamžikem mají Přijíždějící místní čas chybně označený jako UTC.
 HRANICE_POSUNU = pd.Timestamp("2025-03-01")
+PRAH_AKCE = 600  # přítomných navíc: den s akcí, nepatří do baseline
+PRAH_KONTROLA = 2500  # větší akce tvoří kontrolní skupinu (nižší práh by zahrnul přípravné zápasy)
 OKNO_DNU = 35  # baseline jen ze dnů blízkých zápasu (úroveň dat se v čase mění)
 PRITOMNI = (-180, 285)  # minuty od buly, první a poslední interval
 PRIJEZDY = (-180, 30)
@@ -96,6 +99,28 @@ def uzemi(hexagony: list[str]) -> pd.DataFrame:
     return vysl
 
 
+def najdi_akce(v: pd.Series, zapasove: set[str]) -> pd.DataFrame:
+    """Dny bez zápasu, kdy je v hexagonu výrazně víc lidí než obvykle."""
+    f = pd.DataFrame({"v": v, "den": v.index.normalize(),
+                      "min": v.index.hour * 60 + v.index.minute})
+    w = f.pivot_table(index="den", columns="min", values="v")
+    w = w[~w.index.strftime("%Y-%m-%d").isin(zapasove)]
+    radky = []
+    for den in w.index:
+        okoli = [d for d in w.index if d != den and volny(d) == volny(den)
+                 and abs((d - den).days) <= OKNO_DNU]
+        navic = (w.loc[den] - w.loc[okoli].median()).dropna()
+        if navic.max() <= PRAH_AKCE:
+            continue
+        pul = navic[navic >= navic.max() / 2]
+        radky.append({"den": den, "pritomni_navic": round(navic.max()),
+                      "spicka": int(navic.idxmax()), "zacatek": int(pul.index.min())})
+    a = pd.DataFrame(radky)
+    # po půlnoci jde o doznívání akce z předchozího dne
+    a["kontrola"] = (a["pritomni_navic"] >= PRAH_KONTROLA) & (a["spicka"] >= 6 * 60)
+    return a
+
+
 def main() -> None:
     v = nacti_pritomne()
     p = nacti_prijezdy()
@@ -104,7 +129,10 @@ def main() -> None:
     dny_dat = {f"{d:%Y-%m-%d}" for d in v.index.normalize().unique()}
     zapasy = z[z["datum"].isin(dny_dat)]
     print(f"zápasů s daty: {len(zapasy)} z {len(z)}")
-    klidne = [pd.Timestamp(d) for d in sorted(dny_dat - set(z["datum"]))]
+    akce = najdi_akce(v, set(z["datum"]))
+    s_akci = {f"{d:%Y-%m-%d}" for d in akce["den"]}
+    klidne = [pd.Timestamp(d) for d in sorted(dny_dat - set(z["datum"]) - s_akci)]
+    print(f"dnů s jinou akcí: {len(akce)}, v kontrolní skupině {akce['kontrola'].sum()}")
 
     p["den"] = p["cas"].dt.normalize()
     p["min"] = (p["cas"] - p["den"]).dt.total_seconds() / 60
@@ -153,6 +181,35 @@ def main() -> None:
                            - po_case["rezidenti"].get(cas, 0)})
 
     VYSTUP.mkdir(parents=True, exist_ok=True)
+
+    # kontrolní skupina: začátek neznáme, u zápasů je půlka lidí v hale asi 30 min před buly
+    ak_radky, ak_puvod = [], []
+    for q in akce[akce["kontrola"]].itertuples():
+        zac = q.den + pd.Timedelta(minutes=q.zacatek + 30)
+        zaklad = [d for d in klidne
+                  if volny(d) == volny(q.den) and abs((d - q.den).days) <= OKNO_DNU]
+        casti = {}
+        for sl in ("rezidenti", "celkem"):
+            zakl = pd.concat([okno(d, zac, sl) for d in zaklad]).groupby(level=0).sum() / len(zaklad)
+            casti[sl] = okno(q.den, zac, sl).sub(zakl, fill_value=0)
+        ak_radky.append({"datum": f"{q.den:%Y-%m-%d}", "zacatek_odhad": f"{zac:%H:%M}",
+                         "pritomni_navic": q.pritomni_navic,
+                         "prijezdy_navic": round(casti["celkem"].sum()),
+                         "rezidenti_navic": round(casti["rezidenti"].sum())})
+        ak_puvod.append(pd.DataFrame({"navic": casti["rezidenti"], "navic_vse": casti["celkem"]})
+                        .fillna(0).rename_axis("hex").reset_index()
+                        .assign(datum=f"{q.den:%Y-%m-%d}"))
+    ak = pd.DataFrame(ak_radky).merge(
+        pd.read_csv(ROOT / "data" / "akce.csv")[["datum", "nazev", "typ"]], on="datum", how="left")
+    ak.to_csv(VYSTUP / "akce_odhad.csv", index=False, lineterminator="\n")
+    ak_puvod = pd.concat(ak_puvod, ignore_index=True)
+    ak_puvod = ak_puvod.join(uzemi(sorted(ak_puvod["hex"].unique())), on="hex")
+    ak_puvod["pasmo_km"] = pd.cut(ak_puvod["hex"].map(
+        {x: vzdalenost(x) for x in ak_puvod["hex"].unique()}), PASMA_KM, include_lowest=True)
+    for soubor, sl in (("akce_okresy", ["kraje", "okresy"]), ("akce_vzdalenost", ["pasmo_km"])):
+        g = ak_puvod.groupby(["datum", *sl], observed=True)[["navic", "navic_vse"]].sum()
+        g.reset_index().round(3).to_csv(VYSTUP / f"{soubor}.csv", index=False, lineterminator="\n")
+
     pd.DataFrame(radky).to_csv(VYSTUP / "zapasy_odhad.csv", index=False, lineterminator="\n")
     pd.DataFrame(profil).to_csv(VYSTUP / "profil_prijezdu.csv", index=False, lineterminator="\n")
     puvod = pd.concat(puvod, ignore_index=True)
