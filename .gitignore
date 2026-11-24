@@ -1,0 +1,7 @@
+# Surové exporty z Intiq – nezveřejňovat, dokud nebude jasná licence
+data/raw/*
+!data/raw/.gitkeep
+.env
+__pycache__/
+.ipynb_checkpoints/
+.venv/
