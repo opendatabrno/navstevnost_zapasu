@@ -19,7 +19,7 @@ data/akce.csv    – doložené jiné akce v hale (koncerty, MMA, univerzitní h
 data/obyvatele.csv – počty obyvatel (ČSÚ, MV ČR)
 scripts/         – stahování, zpracování a vytvoření webu
 notebooks/       – analýzy (zatím prázdné)
-docs/            – vygenerovaná statická stránka (GitHub Pages)
+web/             – vygenerovaná statická stránka (na Pages ji nasazuje .github/workflows/pages.yml)
 ```
 
 ## Postup
@@ -29,8 +29,8 @@ python scripts/stahni_zapasy.py      # kalendář zápasů (hokej.cz)
 python scripts/stahni_hranice.py     # hranice území (ČÚZK – RÚIAN)
 python scripts/stahni_obyvatele.py   # počty obyvatel
 python scripts/zpracuj_intiq.py      # potřebuje exporty z Intiq v data/raw/intiq/
-python scripts/vytvor_prehled.py     # vytvoří docs/index.html
-python -m http.server 8123 --bind 127.0.0.1 --directory docs
+python scripts/vytvor_prehled.py     # vytvoří web/index.html
+python -m http.server 8123 --bind 127.0.0.1 --directory web
 ```
 
 Web pak běží na vlastním počítači na adrese http://127.0.0.1:8123/. Potřebné balíčky: pandas, geopandas, h3, openpyxl, tzdata.
@@ -42,7 +42,7 @@ Web pak běží na vlastním počítači na adrese http://127.0.0.1:8123/. Potř
 - [x] Fáze 2 – metodika: rozdíl proti běžným dnům, porovnání s oficiální návštěvností
 - [x] Fáze 3 – mapy původu, vzdálenosti, soupeři, typ zápasu, sezóny, profil příjezdů, hokej a jiné akce
 - [ ] Fáze 3 – profil odjezdů, podklad k debatě o nové hale
-- [x] Fáze 4 – statický web (`docs/`)
+- [x] Fáze 4 – statický web (GitHub Actions)
 - [ ] Open data (CSV) – čeká na vyjasnění licence dat Intiq
 
 Surové exporty a podrobné agregace z Intiq v repozitáři nejsou, zveřejněné jsou jen souhrnné výsledky na webu.
